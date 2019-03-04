@@ -1,0 +1,12 @@
+[package]
+name = "mhw_helper"
+version = "0.1.0"
+authors = ["Scott Harper <orcein@gmail.com>"]
+edition = "2018"
+
+[dependencies]
+reqwest = "*"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "*"
+#failure = "0.1.5"
+scraper = "*"
