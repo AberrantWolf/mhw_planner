@@ -1,11 +1,14 @@
 mod mhw_scraper;
 
 use reqwest;
+use reqwest::Url;
+
+use urlencoding;
 
 use serde::{Deserialize, Serialize};
 
 use imgui::*;
-mod support_gfx;
+mod support_glium;
 
 const CLEAR_COLOR: [f32; 4] = [0.2, 0.2, 0.2, 1.0];
 
@@ -35,13 +38,16 @@ struct Armor {
 }
 
 fn get_armor(like_string: &str) -> Result<Vec<Armor>, reqwest::Error> {
-    let mut result = reqwest::get(
+    let url = Url::parse(
         format!(
             "https://mhw-db.com/armor?q={{\"name\":{{\"$like\":\"{}\"}}}}",
-            like_string
+            urlencoding::encode(like_string)
         )
         .as_str(),
-    )?;
+    )
+    .unwrap();
+    println!("{}", url.query().unwrap());
+    let mut result = reqwest::get(url)?;
 
     result.json()
 }
@@ -97,18 +103,14 @@ fn hello_world<'a>(ui: &Ui<'a>, state: &mut AppDataModel) -> bool {
                 .map(|name| name.as_ref())
                 .collect::<Vec<_>>();
             let mut idx = 0;
-            ui.list_box(
-                im_str!(""),
-                &mut idx,
-                ref_names.as_slice(),
-                ref_names.len() as i32,
-                //10,
-            );
+            ui.list_box(im_str!(""), &mut idx, ref_names.as_slice(), 10);
         };
 
         ui.with_style_var(StyleVar::WindowRounding(0.0), || {
             window.build(|| {
-                build_func();
+                ui.with_style_var(StyleVar::FrameRounding(4.0), || {
+                    build_func();
+                });
             });
         });
     });
@@ -119,9 +121,14 @@ fn hello_world<'a>(ui: &Ui<'a>, state: &mut AppDataModel) -> bool {
 fn main() {
     let mut state = AppDataModel::default();
     state.search_string = ImString::with_capacity(128);
-    support_gfx::run("Monster [Helper] World".to_owned(), CLEAR_COLOR, |ui| {
-        hello_world(ui, &mut state)
-    });
+    support_glium::run(
+        "Monster [Helper] World".to_owned(),
+        CLEAR_COLOR,
+        |ui, _, _| hello_world(ui, &mut state),
+    );
+    // support_gfx::run("Monster [Helper] World".to_owned(), CLEAR_COLOR, |ui| {
+    //     hello_world(ui, &mut state)
+    // });
     // let response = match get_armor() {
     //     Ok(r) => r,
     //     Err(_) => panic!(),

@@ -1,11 +1,8 @@
 [package]
 name = "mhw_planner"
-version = "0.1.0"
+version = "0.0.1"
 authors = ["Scott Harper <orcein@gmail.com>"]
 edition = "2018"
-
-# Custom build script, executed before(?) the build
-# build = "build.rs"
 
 [dependencies]
 reqwest = "*"
@@ -13,22 +10,10 @@ serde = { version = "1.0", features = ["derive"] }
 serde_json = "*"
 # failure = "0.1.5"
 scraper = "*"
+urlencoding = "1"
 
-# iui = "0.3"
-
-# orbtk = { git = "https://gitlab.redox-os.org/redox-os/orbtk.git" }
-# orbtk = "0.2.27"
-
-# conrod = { version = "0.61.0", features = ["glium", "winit"] }
-
-# azul = { git = "https://github.com/maps4print/azul" }
-
-# [dependencies.sdl2]
-# builtin = true
-
-gfx = "0.17"
-gfx_window_glutin = "0.28"
-glutin = "0.19"
+glium = { version = "0.23", default-features = true }
 imgui = {version = "0.0.23-pre", path = "../imgui-rs/"}
-imgui-gfx-renderer = {version = "0.0.23-pre", path = "../imgui-rs/imgui-gfx-renderer/"}
+imgui-glium-renderer = { version = "0.0.23-pre", path = "../imgui-rs/imgui-glium-renderer" }
 imgui-winit-support = {version = "0.0.23-pre", path  = "../imgui-rs/imgui-winit-support/"}
+image = "0.20"
