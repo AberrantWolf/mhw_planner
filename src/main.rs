@@ -1,4 +1,6 @@
-mod mhw_scraper;
+mod mhw;
+
+use mhw::search;
 
 use reqwest;
 use reqwest::Url;
@@ -13,10 +15,8 @@ mod support_glium;
 const CLEAR_COLOR: [f32; 4] = [0.2, 0.2, 0.2, 1.0];
 
 #[derive(Default, Debug)]
-struct AppDataModel {
-    counter: usize,
-    search_string: ImString,
-    armors: Vec<Armor>,
+struct AppState {
+    search_state: search::SearchState,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -37,22 +37,7 @@ struct Armor {
     armor_type: ArmorType,
 }
 
-fn get_armor(like_string: &str) -> Result<Vec<Armor>, reqwest::Error> {
-    let url = Url::parse(
-        format!(
-            "https://mhw-db.com/armor?q={{\"name\":{{\"$like\":\"{}\"}}}}",
-            urlencoding::encode(like_string)
-        )
-        .as_str(),
-    )
-    .unwrap();
-    println!("{}", url.query().unwrap());
-    let mut result = reqwest::get(url)?;
-
-    result.json()
-}
-
-fn hello_world<'a>(ui: &Ui<'a>, state: &mut AppDataModel) -> bool {
+fn hello_world<'a>(ui: &Ui<'a>, state: &mut AppState) -> bool {
     let logical_size = ui.frame_size().logical_size;
     let mut window_size = (logical_size.0 as f32, logical_size.1 as f32);
 
@@ -80,30 +65,29 @@ fn hello_world<'a>(ui: &Ui<'a>, state: &mut AppDataModel) -> bool {
             ui.text(im_str!("Search: "));
             ui.same_line(0.0);
             if ui
-                .input_text(im_str!(""), &mut state.search_string)
+                .input_text(im_str!(""), &mut state.search_state.text)
                 .enter_returns_true(true)
                 .build()
             {
                 ui.set_keyboard_focus_here(-1);
-                let r = get_armor(state.search_string.to_str());
-                match r {
-                    Ok(v) => state.armors = v,
-                    Err(_) => state.armors.clear(),
-                }
-                println!("Found: {}", state.armors.len());
+                state.search_state.query_api();
             }
             ui.separator();
-            let armors = &state.armors;
-            let names_list_imstring = armors
+            let results_list = &state.search_state.results;
+            let names_list_imstring = results_list
                 .iter()
-                .map(|armor: &Armor| ImString::new(armor.name.as_str()))
+                .map(|res: &search::SearchResults| ImString::new(res.name.as_str()))
                 .collect::<Vec<_>>();
             let ref_names = names_list_imstring
                 .iter()
                 .map(|name| name.as_ref())
                 .collect::<Vec<_>>();
-            let mut idx = 0;
-            ui.list_box(im_str!(""), &mut idx, ref_names.as_slice(), 10);
+            ui.list_box(
+                im_str!(""),
+                &mut state.search_state.selected_item,
+                ref_names.as_slice(),
+                10,
+            );
         };
 
         ui.with_style_var(StyleVar::WindowRounding(0.0), || {
@@ -119,8 +103,8 @@ fn hello_world<'a>(ui: &Ui<'a>, state: &mut AppDataModel) -> bool {
 }
 
 fn main() {
-    let mut state = AppDataModel::default();
-    state.search_string = ImString::with_capacity(128);
+    let mut state = AppState::default();
+    state.search_state.text = ImString::with_capacity(128);
     support_glium::run(
         "Monster [Helper] World".to_owned(),
         CLEAR_COLOR,
