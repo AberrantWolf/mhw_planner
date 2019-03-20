@@ -33,6 +33,7 @@ fn main() {
         CLEAR_COLOR,
         |ui, _, _| {
             state.layout(&ui);
+            state.process_events();
             !state.should_quit()
         },
     );

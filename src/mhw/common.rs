@@ -1,8 +1,10 @@
+use super::item_display::{ItemDisplayState, ItemId};
 use super::search::SearchState;
 use imgui::*;
+use std::collections::VecDeque;
 
 pub trait MhwGui {
-    fn layout<'a>(&mut self, ui: &Ui<'a> /*, state: &mut AppState*/);
+    fn layout<'a>(&mut self, ui: &Ui<'a>, event_queue: &mut VecDeque<MhwEvent>);
 }
 
 #[derive(Debug)]
@@ -18,28 +20,33 @@ impl Default for ItemType {
 }
 
 #[derive(Debug)]
+pub enum MhwEvent {
+    LoadState(ItemId),
+}
+
+#[derive(Debug)]
 pub struct AppState {
     quit_requested: bool,
     search_state: SearchState,
+    event_list: VecDeque<MhwEvent>,
 }
 
 impl AppState {
     pub fn should_quit(&self) -> bool {
         self.quit_requested
     }
-}
 
-impl Default for AppState {
-    fn default() -> Self {
-        Self {
-            quit_requested: false,
-            search_state: Default::default(),
+    pub fn process_events(&mut self) {
+        for evt in self.event_list.drain(..) {
+            match &evt {
+                MhwEvent::LoadState(_id) => {
+                    println!("Processing event: {:?}", evt);
+                }
+            }
         }
     }
-}
 
-impl MhwGui for AppState {
-    fn layout<'a>(&mut self, ui: &Ui<'a> /*, state: &mut AppState*/) {
+    pub fn layout<'a>(&mut self, ui: &Ui<'a> /*, state: &mut AppState*/) {
         let mut menu_height = 0f32;
 
         ui.with_font(2, || {
@@ -59,7 +66,17 @@ impl MhwGui for AppState {
             // this causes the debug window to appear... try to stop that
             ui.set_cursor_pos((0f32, menu_height));
 
-            self.search_state.layout(&ui);
+            self.search_state.layout(&ui, &mut self.event_list);
         });
+    }
+}
+
+impl Default for AppState {
+    fn default() -> Self {
+        Self {
+            quit_requested: false,
+            search_state: Default::default(),
+            event_list: Default::default(),
+        }
     }
 }

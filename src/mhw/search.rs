@@ -1,9 +1,11 @@
-use super::common::{AppState, ItemType, MhwGui};
+use super::common::{ItemType, MhwEvent, MhwGui};
+use super::item_display::ItemId;
 
 use imgui::*;
 use reqwest;
 use reqwest::Url;
 use serde::{Deserialize, Serialize};
+use std::collections::VecDeque;
 
 // TODO: once this is refactored here, probably won't need pub fields
 
@@ -71,7 +73,7 @@ impl SearchState {
 }
 
 impl MhwGui for SearchState {
-    fn layout<'a>(&mut self, ui: &Ui<'a> /*, state: &mut AppState*/) {
+    fn layout<'a>(&mut self, ui: &Ui<'a>, event_queue: &mut VecDeque<MhwEvent>) {
         if !self.should_draw {
             return;
         }
@@ -112,22 +114,29 @@ impl MhwGui for SearchState {
 
             let available_space = ui.get_content_region_avail();
             ui.with_item_width(-1.0, || {
-                ui.list_box(
+                let did_change = ui.list_box(
                     im_str!("search_results"),
                     &mut self.selected_item,
                     ref_names.as_slice(),
                     ((available_space.1 - ui.imgui().style().frame_padding.y * 2.0)
                         / ui.get_text_line_height_with_spacing()) as i32,
                 );
+
+                if did_change {
+                    event_queue.push_back(MhwEvent::LoadState(ItemId::Armor(
+                        self.results[self.selected_item as usize].id,
+                    )));
+                }
             });
         };
 
-        // ui.with_style_var(StyleVar::WindowRounding(0.0), || {
         window.build(|| {
             ui.with_style_var(StyleVar::FrameRounding(4.0), || {
                 build_func();
             });
         });
-        // });
+
+        // Prepare the draw position for the next window
+        ui.set_cursor_pos((SEARCH_WINDOW_WIDTH, draw_cursor_pos.1));
     }
 }
