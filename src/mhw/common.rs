@@ -1,33 +1,80 @@
-use super::item_display::{ItemDisplayState, ItemId};
+use super::entry_display::EntryDisplayState;
+use super::item::*;
 use super::search::SearchState;
 use imgui::*;
+use serde::{Deserialize, Serialize};
 use std::collections::VecDeque;
 
 pub trait MhwGui {
     fn layout<'a>(&mut self, ui: &Ui<'a>, event_queue: &mut VecDeque<MhwEvent>);
 }
 
-#[derive(Debug)]
-pub enum ItemType {
-    Armor,
-    Weapon,
+#[derive(Serialize, Deserialize, Debug)]
+pub enum Element {
+    Fire,
+    Water,
+    Ice,
+    Thunder,
+    Dragon,
+    Blast,
+    Poison,
+    Sleep,
+    Paralysis,
 }
 
-impl Default for ItemType {
-    fn default() -> Self {
-        ItemType::Armor
-    }
+#[derive(Serialize, Deserialize, Debug)]
+pub struct CraftingCost {
+    quantity: i32,
+    item: Item,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct Slot {
+    rank: i32,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct SkillRank {
+    id: i32,
+    level: i32,
+    description: String,
+    skill: i32,
+    skill_name: String,
+    modifiers: SkillRankModifiers,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct SkillRankModifiers {
+    afinity: f32,
+    attack: i32,
+    damage_fire: i32,
+    damage_water: i32,
+    damage_ice: i32,
+    damage_thunder: i32,
+    damage_dragon: i32,
+    defense: i32,
+    health: i32,
+    sharpness_bonus: i32,
+    resist_all: i32,
+    resist_fire: i32,
+    resist_water: i32,
+    resist_ice: i32,
+    resist_thunder: i32,
+    resist_dragon: i32,
 }
 
 #[derive(Debug)]
 pub enum MhwEvent {
-    LoadState(ItemId),
+    ShowState(EntryDisplayState),
 }
 
 #[derive(Debug)]
 pub struct AppState {
     quit_requested: bool,
     search_state: SearchState,
+    entry_display_state: EntryDisplayState,
     event_list: VecDeque<MhwEvent>,
 }
 
@@ -39,7 +86,7 @@ impl AppState {
     pub fn process_events(&mut self) {
         for evt in self.event_list.drain(..) {
             match &evt {
-                MhwEvent::LoadState(_id) => {
+                MhwEvent::ShowState(_id) => {
                     println!("Processing event: {:?}", evt);
                 }
             }
@@ -67,6 +114,9 @@ impl AppState {
             ui.set_cursor_pos((0f32, menu_height));
 
             self.search_state.layout(&ui, &mut self.event_list);
+            // FUTURE: we'll need a state of viewing an item or plan or something
+            // else and choose what to draw next based on that state.
+            self.entry_display_state.layout(&ui, &mut self.event_list);
         });
     }
 }
@@ -76,6 +126,7 @@ impl Default for AppState {
         Self {
             quit_requested: false,
             search_state: Default::default(),
+            entry_display_state: Default::default(),
             event_list: Default::default(),
         }
     }

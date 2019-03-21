@@ -1,5 +1,5 @@
-use super::common::{ItemType, MhwEvent, MhwGui};
-use super::item_display::ItemId;
+use super::common::{MhwEvent, MhwGui};
+use super::entry_display::EntryDisplayState;
 
 use imgui::*;
 use reqwest;
@@ -11,15 +11,27 @@ use std::collections::VecDeque;
 
 const SEARCH_WINDOW_WIDTH: f32 = 240f32;
 
+#[derive(Debug)]
+pub enum SearchType {
+    Armor,
+    Weapon,
+}
+
+impl Default for SearchType {
+    fn default() -> Self {
+        SearchType::Armor
+    }
+}
+
 #[derive(Serialize, Deserialize, Debug)]
 pub struct SearchResults {
-    pub id: u64,
+    pub id: u32,
     pub name: String,
 }
 
 #[derive(Debug)]
 pub struct SearchState {
-    pub find_type: ItemType,
+    pub search_type: SearchType,
     pub text: ImString,
     pub selected_item: i32,
     pub should_draw: bool,
@@ -30,7 +42,7 @@ pub struct SearchState {
 impl Default for SearchState {
     fn default() -> Self {
         Self {
-            find_type: Default::default(),
+            search_type: Default::default(),
             text: ImString::with_capacity(128),
             selected_item: -1,
             should_draw: true,
@@ -123,9 +135,8 @@ impl MhwGui for SearchState {
                 );
 
                 if did_change {
-                    event_queue.push_back(MhwEvent::LoadState(ItemId::Armor(
-                        self.results[self.selected_item as usize].id,
-                    )));
+                    // TODO: fetch the data!
+                    event_queue.push_back(MhwEvent::ShowState(EntryDisplayState::None));
                 }
             });
         };
