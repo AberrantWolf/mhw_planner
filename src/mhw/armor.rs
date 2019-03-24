@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
-enum ArmorType {
+pub enum ArmorType {
     Head,
     Chest,
     Gloves,
@@ -13,20 +13,20 @@ enum ArmorType {
 
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
-enum ArmorRank {
+pub enum ArmorRank {
     Low,
     High,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
-struct Defense {
+pub struct Defense {
     base: i32,
     max: i32,
     augmented: i32,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
-struct Resistances {
+pub struct Resistances {
     fire: i32,
     water: i32,
     ice: i32,
@@ -35,7 +35,7 @@ struct Resistances {
 }
 
 #[derive(Serialize, Deserialize, Debug)]
-struct SetInfo {
+pub struct SetInfo {
     id: i32,
     name: String,
     rank: ArmorRank,
@@ -44,26 +44,26 @@ struct SetInfo {
 
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
-struct ArmorAssets {
+pub struct ArmorAssets {
     image_male: String,
     image_female: String,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
-struct ArmorCraftingInfo {
+pub struct ArmorCraftingInfo {
     materials: Vec<CraftingCost>,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
-enum Gender {
+pub enum Gender {
     Male,
     Female,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
-struct ArmorAttributes {
+pub struct ArmorAttributes {
     required_gender: Option<Gender>,
 }
 

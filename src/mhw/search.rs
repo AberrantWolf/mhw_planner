@@ -1,27 +1,14 @@
 use super::common::{MhwEvent, MhwGui};
 use super::entry_display::EntryDisplayState;
+use super::query::*;
 
 use imgui::*;
-use reqwest;
-use reqwest::Url;
 use serde::{Deserialize, Serialize};
 use std::collections::VecDeque;
 
 // TODO: once this is refactored here, probably won't need pub fields
 
 const SEARCH_WINDOW_WIDTH: f32 = 240f32;
-
-#[derive(Debug)]
-pub enum SearchType {
-    Armor,
-    Weapon,
-}
-
-impl Default for SearchType {
-    fn default() -> Self {
-        SearchType::Armor
-    }
-}
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct SearchResults {
@@ -31,7 +18,7 @@ pub struct SearchResults {
 
 #[derive(Debug)]
 pub struct SearchState {
-    pub search_type: SearchType,
+    pub search_type: SearchCategory,
     pub text: ImString,
     pub selected_item: i32,
     pub should_draw: bool,
@@ -56,30 +43,15 @@ impl SearchState {
         self.results.clear();
         self.selected_item = -1;
 
-        let url = Url::parse(
-        format!(
-            "https://mhw-db.com/armor?q={{\"name\":{{\"$like\":\"{}\"}}}}&p={{\"id\":true,\"name\":true,\"type\":true}}",
-            urlencoding::encode(self.text.to_str())
-            )
-            .as_str(),
-        )
-        .unwrap();
-        println!("{}", url.as_str());
-        let mut result = match reqwest::get(url) {
-            Ok(r) => r,
+        let found = execute_mhw_query(QueryInfo::find_ids(self.text.to_str()));
+        self.results = match found {
+            Ok(v) => v,
             Err(e) => {
-                println!("Error querying API: {}", e);
+                println!("API Query failed: {}", e);
                 return;
             }
         };
 
-        self.results = match result.json() {
-            Ok(r) => r,
-            Err(e) => {
-                println!("Error converting API search into Vec: {}", e);
-                vec![]
-            }
-        };
         println!("Found: {}", self.results.len());
     }
 }

@@ -11,6 +11,7 @@ serde_json = "*"
 # failure = "0.1.5"
 scraper = "*"
 urlencoding = "1"
+itertools = "*"
 
 glium = { version = "0.23", default-features = true }
 imgui = {version = "0.0.23-pre", path = "../imgui-rs/"}
