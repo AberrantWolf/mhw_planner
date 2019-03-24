@@ -1,3 +1,4 @@
+use super::armor::ArmorInfo;
 use super::common::{MhwEvent, MhwGui};
 use super::entry_display::EntryDisplayState;
 use super::query::*;
@@ -43,7 +44,7 @@ impl SearchState {
         self.results.clear();
         self.selected_item = -1;
 
-        let found = execute_mhw_query(QueryInfo::find_ids(self.text.to_str()));
+        let found = QueryInfo::find_ids(self.text.to_str()).execute_mhw_query();
         self.results = match found {
             Ok(v) => v,
             Err(e) => {
@@ -53,6 +54,37 @@ impl SearchState {
         };
 
         println!("Found: {}", self.results.len());
+    }
+
+    fn get_entry_for_selection(&self) -> EntryDisplayState {
+        let id_string = if self.selected_item >= 0 {
+            let idx = self.selected_item as usize;
+            format!("{}", self.results[idx].id)
+        } else {
+            return EntryDisplayState::None;
+        };
+        let filter = QueryFilter::new("id".to_owned(), QueryFilterType::Exact(id_string));
+        let query = QueryInfo::find_category(self.search_type).with_filter(filter);
+
+        match self.search_type {
+            SearchCategory::Armor => {
+                let found: Result<Vec<ArmorInfo>, MHWQueryError> = query.execute_mhw_query();
+                match found {
+                    Ok(mut f) => {
+                        if !f.is_empty() {
+                            EntryDisplayState::Armor(f.remove(0))
+                        } else {
+                            EntryDisplayState::None
+                        }
+                    }
+                    Err(e) => {
+                        println!("Error retrieving entry: {}", e);
+                        EntryDisplayState::None
+                    }
+                }
+            }
+            SearchCategory::Weapon => EntryDisplayState::None,
+        }
     }
 }
 
@@ -107,8 +139,8 @@ impl MhwGui for SearchState {
                 );
 
                 if did_change {
-                    // TODO: fetch the data!
-                    event_queue.push_back(MhwEvent::ShowState(EntryDisplayState::None));
+                    let found = self.get_entry_for_selection();
+                    event_queue.push_back(MhwEvent::ShowState(found));
                 }
             });
         };

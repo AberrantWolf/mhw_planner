@@ -44,10 +44,10 @@ pub struct SkillRank {
     modifiers: SkillRankModifiers,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
-#[serde(rename_all = "camelCase")]
+#[derive(Serialize, Deserialize, Debug, Default)]
+#[serde(rename_all = "camelCase", default)]
 pub struct SkillRankModifiers {
-    afinity: f32,
+    affinity: f32,
     attack: i32,
     damage_fire: i32,
     damage_water: i32,
@@ -88,6 +88,9 @@ impl AppState {
             match &evt {
                 MhwEvent::ShowState(_id) => {
                     println!("Processing event: {:?}", evt);
+                    // create search info
+                    // match result
+                    // set the
                 }
             }
         }

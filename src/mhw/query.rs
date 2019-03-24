@@ -8,7 +8,7 @@ use std::fmt;
 //
 // Search Category
 //
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub enum SearchCategory {
     Armor,
     Weapon,
@@ -54,6 +54,15 @@ impl fmt::Display for QueryFilterType {
 pub struct QueryFilter {
     field_name: String,
     filter: QueryFilterType,
+}
+
+impl QueryFilter {
+    pub fn new(field: String, filter: QueryFilterType) -> Self {
+        Self {
+            field_name: field,
+            filter: filter,
+        }
+    }
 }
 
 impl fmt::Display for QueryFilter {
@@ -123,7 +132,7 @@ impl fmt::Display for QueryProjection {
 #[derive(Debug)]
 pub struct QueryInfo {
     category: SearchCategory,
-    filter: QueryFilter,
+    filter: Option<QueryFilter>,
     projection: Option<QueryProjection>,
 }
 
@@ -131,14 +140,70 @@ impl QueryInfo {
     pub fn find_ids(text: &str) -> Self {
         Self {
             category: Default::default(),
-            filter: QueryFilter {
+            filter: Some(QueryFilter {
                 field_name: "name".to_owned(),
                 filter: QueryFilterType::Like(text.to_owned()),
-            },
+            }),
             projection: Some(QueryProjection {
                 meta: QueryProjectionMeta::Inclusive,
                 fields: vec!["id", "name", "type"],
             }),
+        }
+    }
+
+    pub fn find_category(category: SearchCategory) -> Self {
+        Self {
+            category: category,
+            filter: Default::default(),
+            projection: Default::default(),
+        }
+    }
+
+    pub fn with_filter(mut self, filter: QueryFilter) -> Self {
+        self.filter = Some(filter);
+        self
+    }
+
+    pub fn with_projection(mut self, proj: QueryProjection) -> Self {
+        self.projection = Some(proj);
+        self
+    }
+
+    pub fn execute_mhw_query<T>(&self) -> Result<T, MHWQueryError>
+    where
+        T: DeserializeOwned,
+    {
+        let mut url_string = format!(
+            "https://mhw-db.com/{category}",
+            category = self.category.to_string()
+        );
+
+        let mut prefix = "?"; // in case there's no query, prefix should use '?'
+        if let Some(filter) = &self.filter {
+            let filter_string = format!("?q={}", filter);
+            url_string.push_str(filter_string.as_str());
+            prefix = "&";
+        }
+
+        if let Some(proj) = &self.projection {
+            let projection_string = format!("{}p={}", prefix, proj);
+            url_string.push_str(projection_string.as_str());
+        }
+
+        let url = Url::parse(url_string.as_str()).unwrap();
+        println!("{}", url.as_str());
+
+        let mut result = match reqwest::get(url) {
+            Ok(r) => r,
+            Err(e) => return Err(MHWQueryError::API(format!("Error querying API: {}", e))),
+        };
+
+        match result.json() {
+            Ok(r) => Ok(r),
+            Err(e) => Err(MHWQueryError::Internal(format!(
+                "Error converting API search into Vec: {}",
+                e
+            ))),
         }
     }
 }
@@ -159,57 +224,5 @@ impl fmt::Display for MHWQueryError {
             MHWQueryError::Internal(s) => write!(f, "Internal error: {}", s),
             MHWQueryError::API(s) => write!(f, "API error: {}", s),
         }
-    }
-}
-
-//
-// Execute Query...
-//
-// TODO: Should this be a function on the struct instead?
-pub fn execute_mhw_query<T>(info: QueryInfo) -> Result<T, MHWQueryError>
-where
-    T: DeserializeOwned,
-{
-    let mut url_string = format!(
-        "https://mhw-db.com/{category}?q=",
-        category = info.category.to_string()
-    );
-
-    let filter_string = info.filter.to_string();
-    url_string.push_str(filter_string.as_str());
-
-    if let Some(proj) = info.projection {
-        let projection_string = format!("&p={}", proj);
-        url_string.push_str(projection_string.as_str());
-    }
-
-    // let filter_string = format!(
-    //     "{{\"{name}\"}}:{value}",
-    //     name = filter.0,
-    //     value = filter.1.filter_string()
-    // );
-
-    // let query_string = format!(
-    //     "{{\"name\":{{\"$like\":\"{text}\"}}}}&p={{\"id\":true,\"name\":true,\"type\":true}}",
-    //     text = urlencoding::encode(&info.like_text.unwrap().to_owned()).as_str()
-    // );
-
-    let url = Url::parse(url_string.as_str()).unwrap();
-    println!("{}", url.as_str());
-
-    let mut result = match reqwest::get(url) {
-        Ok(r) => r,
-        Err(e) => return Err(MHWQueryError::API(format!("Error querying API: {}", e))),
-    };
-
-    // let json_result = result
-    //     .json()
-    //     .map_err(|_json_err| MHWQueryError::Internal("JSON error".to_string()));
-    match result.json() {
-        Ok(r) => Ok(r),
-        Err(e) => Err(MHWQueryError::Internal(format!(
-            "Error converting API search into Vec: {}",
-            e
-        ))),
     }
 }

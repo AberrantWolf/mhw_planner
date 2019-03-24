@@ -68,6 +68,7 @@ pub struct ArmorAttributes {
 }
 
 #[derive(Serialize, Deserialize, Debug)]
+#[serde(rename_all = "camelCase")]
 pub struct ArmorInfo {
     id: i32,
     name: String,
@@ -79,7 +80,7 @@ pub struct ArmorInfo {
     resistances: Resistances,
     slots: Vec<Slot>,
     skills: Vec<SkillRank>,
-    set: SetInfo,
+    armor_set: SetInfo,
     assets: ArmorAssets,
     crafting: ArmorCraftingInfo,
     attributes: ArmorAttributes,
