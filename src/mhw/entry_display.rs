@@ -20,7 +20,9 @@ impl MhwGui for EntryDisplayState {
         // TODO: Keep UI responsive with async getting data and placeholder UI until loaded
         match self {
             EntryDisplayState::None => {}
-            EntryDisplayState::Armor(ref armor) => {}
+            EntryDisplayState::Armor(ref mut armor) => {
+                armor.layout(ui, event_queue);
+            }
         };
     }
 }

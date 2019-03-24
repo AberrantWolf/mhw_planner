@@ -1,5 +1,7 @@
 use super::common::*;
+use imgui::*;
 use serde::{Deserialize, Serialize};
+use std::collections::VecDeque;
 
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
@@ -84,4 +86,20 @@ pub struct ArmorInfo {
     assets: ArmorAssets,
     crafting: ArmorCraftingInfo,
     attributes: ArmorAttributes,
+}
+
+impl MhwGui for ArmorInfo {
+    fn layout<'a>(&mut self, ui: &Ui<'a>, event_queue: &mut VecDeque<MhwEvent>) {
+        // TODO: Calculate remaining size
+        let draw_cursor_pos = ui.get_cursor_pos();
+        let window = ui
+            .window(im_str!("Weapon Info"))
+            .position(draw_cursor_pos, ImGuiCond::Always)
+            .size((640f32, 480f32), ImGuiCond::Always);
+        // TODO: Hide resize and collapse indicators (no resize!)
+
+        window.build(|| {
+            // TODO: fill this out... :P
+        });
+    }
 }

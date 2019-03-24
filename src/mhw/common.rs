@@ -85,12 +85,10 @@ impl AppState {
 
     pub fn process_events(&mut self) {
         for evt in self.event_list.drain(..) {
-            match &evt {
-                MhwEvent::ShowState(_id) => {
-                    println!("Processing event: {:?}", evt);
-                    // create search info
-                    // match result
-                    // set the
+            match evt {
+                MhwEvent::ShowState(state) => {
+                    //println!("Processing event: {:?}", &state);
+                    self.entry_display_state = state;
                 }
             }
         }
