@@ -88,18 +88,15 @@ pub struct ArmorInfo {
     attributes: ArmorAttributes,
 }
 
-impl MhwGui for ArmorInfo {
-    fn layout<'a>(&mut self, ui: &Ui<'a>, event_queue: &mut VecDeque<MhwEvent>) {
-        // TODO: Calculate remaining size
-        let draw_cursor_pos = ui.get_cursor_pos();
-        let window = ui
-            .window(im_str!("Weapon Info"))
-            .position(draw_cursor_pos, ImGuiCond::Always)
-            .size((640f32, 480f32), ImGuiCond::Always);
-        // TODO: Hide resize and collapse indicators (no resize!)
-
-        window.build(|| {
-            // TODO: fill this out... :P
-        });
+impl MhwWindowContents for ArmorInfo {
+    fn build_window<'a>(
+        &mut self,
+        ui: &Ui<'a>,
+        details: &mut GuiDetails,
+        event_queue: &mut VecDeque<MhwEvent>,
+    ) {
+        // TODO: Lay this out properly -- labels on the LEFT, and using the bigger font
+        let imstring = ImString::new(self.name.clone());
+        ui.label_text(im_str!("Name"), &imstring);
     }
 }

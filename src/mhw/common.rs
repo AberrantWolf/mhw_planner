@@ -5,8 +5,27 @@ use imgui::*;
 use serde::{Deserialize, Serialize};
 use std::collections::VecDeque;
 
+#[derive(Debug)]
+pub struct GuiDetails {
+    pub next_start_pos: (f32, f32),
+}
+
 pub trait MhwGui {
-    fn layout<'a>(&mut self, ui: &Ui<'a>, event_queue: &mut VecDeque<MhwEvent>);
+    fn layout<'a>(
+        &mut self,
+        ui: &Ui<'a>,
+        details: &mut GuiDetails,
+        event_queue: &mut VecDeque<MhwEvent>,
+    );
+}
+
+pub trait MhwWindowContents {
+    fn build_window<'a>(
+        &mut self,
+        ui: &Ui<'a>,
+        details: &mut GuiDetails,
+        event_queue: &mut VecDeque<MhwEvent>,
+    );
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -87,19 +106,21 @@ impl AppState {
         for evt in self.event_list.drain(..) {
             match evt {
                 MhwEvent::ShowState(state) => {
-                    //println!("Processing event: {:?}", &state);
+                    // Set the current display state to the one we just loaded
                     self.entry_display_state = state;
                 }
             }
         }
     }
 
-    pub fn layout<'a>(&mut self, ui: &Ui<'a> /*, state: &mut AppState*/) {
-        let mut menu_height = 0f32;
+    pub fn layout<'a>(&mut self, ui: &Ui<'a>) {
+        let mut gui_details = GuiDetails {
+            next_start_pos: (0f32, 0f32),
+        };
 
         ui.with_font(2, || {
             ui.main_menu_bar(|| {
-                menu_height = ui.get_window_size().1;
+                gui_details.next_start_pos.1 = ui.get_window_size().1;
                 ui.menu(im_str!("File")).build(|| {
                     ui.with_font(1, || {
                         if ui.menu_item(im_str!("Quit")).build() {
@@ -111,13 +132,10 @@ impl AppState {
         });
 
         ui.with_font(1, || {
-            // this causes the debug window to appear... try to stop that
-            ui.set_cursor_pos((0f32, menu_height));
-
-            self.search_state.layout(&ui, &mut self.event_list);
-            // FUTURE: we'll need a state of viewing an item or plan or something
-            // else and choose what to draw next based on that state.
-            self.entry_display_state.layout(&ui, &mut self.event_list);
+            self.search_state
+                .layout(&ui, &mut gui_details, &mut self.event_list);
+            self.entry_display_state
+                .layout(&ui, &mut gui_details, &mut self.event_list);
         });
     }
 }

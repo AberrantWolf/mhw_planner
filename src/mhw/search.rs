@@ -2,6 +2,7 @@ use super::armor::ArmorInfo;
 use super::common::{MhwEvent, MhwGui};
 use super::entry_display::EntryDisplayState;
 use super::query::*;
+use crate::mhw::common::GuiDetails;
 
 use imgui::*;
 use serde::{Deserialize, Serialize};
@@ -89,13 +90,19 @@ impl SearchState {
 }
 
 impl MhwGui for SearchState {
-    fn layout<'a>(&mut self, ui: &Ui<'a>, event_queue: &mut VecDeque<MhwEvent>) {
+    fn layout<'a>(
+        &mut self,
+        ui: &Ui<'a>,
+        details: &mut GuiDetails,
+        event_queue: &mut VecDeque<MhwEvent>,
+    ) {
         if !self.should_draw {
             return;
         }
         let logical_size = ui.frame_size().logical_size;
-        let draw_cursor_pos = ui.get_cursor_pos();
+        let draw_cursor_pos = details.next_start_pos;
         let window_size = (logical_size.0 as f32, logical_size.1 as f32);
+        details.next_start_pos.0 = SEARCH_WINDOW_WIDTH;
 
         let window = ui
             .window(im_str!("Search..."))
@@ -150,8 +157,5 @@ impl MhwGui for SearchState {
                 build_func();
             });
         });
-
-        // Prepare the draw position for the next window
-        ui.set_cursor_pos((SEARCH_WINDOW_WIDTH, draw_cursor_pos.1));
     }
 }
