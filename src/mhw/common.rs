@@ -87,8 +87,8 @@ pub enum Element {
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct CraftingCost {
-    quantity: i32,
-    item: Item,
+    pub quantity: i32,
+    pub item: Item,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -99,33 +99,33 @@ pub struct Slot {
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct SkillRank {
-    id: i32,
-    level: i32,
-    description: String,
-    skill: i32,
-    skill_name: String,
-    modifiers: SkillRankModifiers,
+    pub id: i32,
+    pub level: i32,
+    pub description: String,
+    pub skill: i32,
+    pub skill_name: String,
+    pub modifiers: SkillRankModifiers,
 }
 
 #[derive(Serialize, Deserialize, Debug, Default)]
 #[serde(rename_all = "camelCase", default)]
 pub struct SkillRankModifiers {
-    affinity: f32,
-    attack: i32,
-    damage_fire: i32,
-    damage_water: i32,
-    damage_ice: i32,
-    damage_thunder: i32,
-    damage_dragon: i32,
-    defense: i32,
-    health: i32,
-    sharpness_bonus: i32,
-    resist_all: i32,
-    resist_fire: i32,
-    resist_water: i32,
-    resist_ice: i32,
-    resist_thunder: i32,
-    resist_dragon: i32,
+    pub affinity: f32,
+    pub attack: i32,
+    pub damage_fire: i32,
+    pub damage_water: i32,
+    pub damage_ice: i32,
+    pub damage_thunder: i32,
+    pub damage_dragon: i32,
+    pub defense: i32,
+    pub health: i32,
+    pub sharpness_bonus: i32,
+    pub resist_all: i32,
+    pub resist_fire: i32,
+    pub resist_water: i32,
+    pub resist_ice: i32,
+    pub resist_thunder: i32,
+    pub resist_dragon: i32,
 }
 
 #[derive(Debug)]

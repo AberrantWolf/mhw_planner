@@ -1,10 +1,16 @@
 use super::common::{
     fonts::*, rarity::*, CraftingCost, GuiDetails, MhwEvent, MhwWindowContents, SkillRank, Slot,
 };
+use crate::widgets::*;
 use imgui::*;
 use serde::{Deserialize, Serialize};
 use std::collections::VecDeque;
 use std::fmt::{self, Debug, Display};
+
+const RESISTANCES_COLUMNS: [&str; 2] = ["Name", "Value"];
+const SKILLS_COLUMNS: [&str; 2] = ["Name", "Level"];
+const CRAFTING_COLUMNS: [&str; 2] = ["Item", "Count"];
+const OTHER_COLUMNS: [&str; 2] = ["Label", "Value"];
 
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
@@ -31,38 +37,38 @@ impl fmt::Display for ArmorRank {
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Defense {
-    base: i32,
-    max: i32,
-    augmented: i32,
+    pub base: i32,
+    pub max: i32,
+    pub augmented: i32,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Resistances {
-    fire: i32,
-    water: i32,
-    ice: i32,
-    thunder: i32,
-    dragon: i32,
+    pub fire: i32,
+    pub water: i32,
+    pub ice: i32,
+    pub thunder: i32,
+    pub dragon: i32,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct SetInfo {
-    id: i32,
-    name: String,
-    rank: ArmorRank,
-    pieces: Vec<i32>,
+    pub id: i32,
+    pub name: String,
+    pub rank: ArmorRank,
+    pub pieces: Vec<i32>,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct ArmorAssets {
-    image_male: Option<String>,
-    image_female: Option<String>,
+    pub image_male: Option<String>,
+    pub image_female: Option<String>,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct ArmorCraftingInfo {
-    materials: Vec<CraftingCost>,
+    pub materials: Vec<CraftingCost>,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -72,29 +78,107 @@ pub enum Gender {
     Female,
 }
 
+impl fmt::Display for Gender {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        Debug::fmt(self, f)
+    }
+}
+
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct ArmorAttributes {
-    required_gender: Option<Gender>,
+    pub required_gender: Option<Gender>,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct ArmorInfo {
-    id: i32,
-    name: String,
+    pub id: i32,
+    pub name: String,
     #[serde(rename = "type")]
-    type_val: ArmorType,
-    rank: ArmorRank,
-    rarity: u32,
-    defense: Defense,
-    resistances: Resistances,
-    slots: Vec<Slot>,
-    skills: Vec<SkillRank>,
-    armor_set: Option<SetInfo>,
-    assets: ArmorAssets,
-    crafting: ArmorCraftingInfo,
-    attributes: ArmorAttributes,
+    pub type_val: ArmorType,
+    pub rank: ArmorRank,
+    pub rarity: u32,
+    pub defense: Defense,
+    pub resistances: Resistances,
+    pub slots: Vec<Slot>,
+    pub skills: Vec<SkillRank>,
+    pub armor_set: Option<SetInfo>,
+    pub assets: ArmorAssets,
+    pub crafting: ArmorCraftingInfo,
+    pub attributes: ArmorAttributes,
+
+    // internal details
+    #[serde(skip)]
+    pub resistances_cache: Vec<String>,
+    #[serde(skip)]
+    pub skills_cache: Vec<String>,
+    #[serde(skip)]
+    pub crafting_cache: Vec<String>,
+    #[serde(skip)]
+    pub other_cache: Vec<String>,
+}
+
+impl ArmorInfo {
+    pub fn resistances_data(&mut self) -> &Vec<String> {
+        macro_rules! try_add_resistance_row {
+            ($name:expr, $elem:ident) => {
+                if self.resistances.$elem != 0 {
+                    self.resistances_cache.push($name.to_owned());
+                    self.resistances_cache
+                        .push(self.resistances.$elem.to_string());
+                }
+            };
+        }
+        if self.resistances_cache.len() < 1 {
+            // see if we need to add anything
+            try_add_resistance_row!("Fire", fire);
+            try_add_resistance_row!("Water", water);
+            try_add_resistance_row!("Ice", ice);
+            try_add_resistance_row!("Thunder", thunder);
+            try_add_resistance_row!("Dragon", dragon);
+        }
+
+        &self.resistances_cache
+    }
+
+    pub fn skills_data(&mut self) -> &Vec<String> {
+        if self.skills_cache.len() < 1 {
+            // see if we need to add anything
+            let skills = &self.skills;
+            let iter = skills.iter();
+            let skills_cache = &mut self.skills_cache;
+            for skill in iter {
+                skills_cache.push(skill.skill_name.clone());
+                skills_cache.push(skill.level.to_string());
+            }
+        }
+
+        &self.skills_cache
+    }
+
+    pub fn crafting_data(&mut self) -> &Vec<String> {
+        if self.crafting_cache.len() < 1 {
+            let mats = &self.crafting.materials;
+            let crafting_cache = &mut self.crafting_cache;
+            for cost in mats {
+                self.crafting_cache.push(cost.item.name.clone());
+                self.crafting_cache.push(cost.quantity.to_string());
+            }
+        }
+        &self.crafting_cache
+    }
+
+    pub fn other_data(&mut self) -> &Vec<String> {
+        if self.other_cache.len() < 1 {
+            if let Some(gender) = &self.attributes.required_gender {
+                self.other_cache.push("Required Gender".to_owned());
+                self.other_cache.push(gender.to_string());
+            }
+        }
+
+        &self.other_cache
+    }
 }
 
 impl MhwWindowContents for ArmorInfo {
@@ -123,13 +207,6 @@ impl MhwWindowContents for ArmorInfo {
         // Defense
         ui.with_font(FONT_IDX_WINDOW_TITLE, || {
             let text = im_str!("Defense");
-            // let width = ui.get_column_width(-1); // current column
-            // let text_size = ui.calc_text_size(text, false, -1.0);
-            // let remaining = width - text_size.x;
-            // if remaining > 0.0 {
-            //     let cursor = ui.get_cursor_pos();
-            //     ui.set_cursor_pos((cursor.0 + remaining / 2.0, cursor.1));
-            // }
             ui.text(text);
         });
         ui.with_font(FONT_IDX_NORMAL, || {
@@ -184,13 +261,6 @@ impl MhwWindowContents for ArmorInfo {
         ui.next_column();
         ui.with_font(FONT_IDX_WINDOW_TITLE, || {
             let text = im_str!("Armor Set");
-            // let width = ui.get_column_width(-1); // current column
-            // let text_size = ui.calc_text_size(text, false, -1.0);
-            // let remaining = width - text_size.x;
-            // if remaining > 0.0 {
-            //     let cursor = ui.get_cursor_pos();
-            //     ui.set_cursor_pos((cursor.0 + remaining / 2.0, cursor.1));
-            // }
             ui.text(text);
         });
         ui.with_font(FONT_IDX_NORMAL, || {
@@ -200,18 +270,25 @@ impl MhwWindowContents for ArmorInfo {
             });
 
             let imgstr = ImString::from(text);
-            // let width = ui.get_column_width(-1); // current column
-            // let text_size = ui.calc_text_size(&imgstr, false, -1.0);
-            // let remaining = width - text_size.x;
-            // if remaining > 0.0 {
-            //     let cursor = ui.get_cursor_pos();
-            //     ui.set_cursor_pos((cursor.0 + remaining / 2.0, cursor.1));
-            // }
             ui.text(&imgstr);
         });
 
-        ui.columns(2, im_str!("armor_skills"), true);
+        ui.columns(2, im_str!("armor_attribs"), true);
         ui.separator();
-        ui.text("next");
+        draw_table(
+            ui,
+            "Resistances",
+            &RESISTANCES_COLUMNS,
+            self.resistances_data(),
+        );
+
+        ui.next_column();
+        draw_table(ui, "Skills", &SKILLS_COLUMNS, self.skills_data());
+
+        ui.next_column();
+        draw_table(ui, "Crafting", &CRAFTING_COLUMNS, self.crafting_data());
+
+        ui.next_column();
+        draw_table(ui, "Other Attribs", &OTHER_COLUMNS, self.other_data());
     }
 }

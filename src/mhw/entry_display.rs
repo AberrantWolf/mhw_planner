@@ -36,11 +36,11 @@ impl MhwGui for EntryDisplayState {
             EntryDisplayState::Armor(_) => im_str!("Armor Info"),
         };
 
-        // TODO: Use bigger font here
         let window = ui
             .window(title)
             .position(draw_cursor_pos, ImGuiCond::Always)
-            .size(remaining_size, ImGuiCond::Always);
+            .size(remaining_size, ImGuiCond::Always)
+            .flags(ImGuiWindowFlags::NoCollapse | ImGuiWindowFlags::NoResize);
 
         // TODO: Keep UI responsive with async getting data and placeholder UI until loaded
         ui.with_font(FONT_IDX_WINDOW_TITLE, || {

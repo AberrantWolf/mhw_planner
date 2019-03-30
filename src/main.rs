@@ -1,4 +1,5 @@
 mod mhw;
+mod widgets;
 
 use mhw::common::AppState;
 
@@ -9,7 +10,7 @@ const CLEAR_COLOR: [f32; 4] = [0.2, 0.2, 0.2, 1.0];
 fn main() {
     let mut state = AppState::default();
     support_glium::run(
-        "Monster [Helper] World".to_owned(),
+        "Monster Hunting Wishlist+".to_owned(),
         CLEAR_COLOR,
         |ui, _, _| {
             state.layout(&ui);
