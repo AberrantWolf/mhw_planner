@@ -52,9 +52,9 @@ where
     //     &FontGlyphRange::japanese(),
     // );
 
+    // NORMAL = 1
     let font_size = (18.0 * hidpi_factor) as f32;
     imgui.fonts().add_font_with_config(
-        //include_bytes!("../resources/ProggyClean.ttf"),
         include_bytes!("../resources/NotoSansJP-Regular.otf"),
         ImFontConfig::new()
             .merge_mode(true)
@@ -65,10 +65,51 @@ where
         &FontGlyphRange::japanese(),
     );
 
+    // WINDOW TITLE = 2
+    let font_size = (18.0 * hidpi_factor) as f32;
+    imgui.fonts().add_font_with_config(
+        include_bytes!("../resources/NotoSansJP-Bold.otf"),
+        ImFontConfig::new()
+            .merge_mode(true)
+            .oversample_h(1)
+            .pixel_snap_h(true)
+            .size_pixels(font_size)
+            .merge_mode(false),
+        &FontGlyphRange::japanese(),
+    );
+
+    // MENU = 3
     let font_size = (24.0 * hidpi_factor) as f32;
     imgui.fonts().add_font_with_config(
-        //include_bytes!("../resources/NotoSansJP-Regular.otf"),
-        include_bytes!("../resources/NotoSansJP-Regular.otf"),
+        include_bytes!("../resources/NotoSansJP-Bold.otf"),
+        ImFontConfig::new()
+            .merge_mode(true)
+            .oversample_h(1)
+            .pixel_snap_h(true)
+            .size_pixels(font_size)
+            //.rasterizer_multiply(1.0)
+            .merge_mode(false),
+        &FontGlyphRange::japanese(),
+    );
+
+    // HEADER = 4
+    let font_size = (48.0 * hidpi_factor) as f32;
+    imgui.fonts().add_font_with_config(
+        include_bytes!("../resources/NotoSansJP-Bold.otf"),
+        ImFontConfig::new()
+            .merge_mode(true)
+            .oversample_h(1)
+            .pixel_snap_h(true)
+            .size_pixels(font_size)
+            //.rasterizer_multiply(1.0)
+            .merge_mode(false),
+        &FontGlyphRange::japanese(),
+    );
+
+    // MINI = 5
+    let font_size = (14.0 * hidpi_factor) as f32;
+    imgui.fonts().add_font_with_config(
+        include_bytes!("../resources/NotoSansJP-Bold.otf"),
         ImFontConfig::new()
             .merge_mode(true)
             .oversample_h(1)

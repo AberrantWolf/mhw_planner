@@ -1,5 +1,5 @@
 use super::armor::*;
-use super::common::{MhwEvent, MhwGui};
+use super::common::{fonts::*, MhwEvent, MhwGui};
 use crate::mhw::common::GuiDetails;
 use crate::mhw::common::MhwWindowContents;
 use imgui::*;
@@ -43,11 +43,13 @@ impl MhwGui for EntryDisplayState {
             .size(remaining_size, ImGuiCond::Always);
 
         // TODO: Keep UI responsive with async getting data and placeholder UI until loaded
-        match self {
-            EntryDisplayState::None => window.build(|| {}),
-            EntryDisplayState::Armor(ref mut armor) => {
-                window.build(|| armor.build_window(ui, details, event_queue))
-            } // TODO: add more as I build more entry types
-        };
+        ui.with_font(FONT_IDX_WINDOW_TITLE, || {
+            match self {
+                EntryDisplayState::None => window.build(|| {}),
+                EntryDisplayState::Armor(ref mut armor) => {
+                    window.build(|| armor.build_window(ui, details, event_queue))
+                } // TODO: add more as I build more entry types
+            };
+        });
     }
 }

@@ -4,6 +4,7 @@ use reqwest;
 use reqwest::Url;
 use serde::de::DeserializeOwned;
 use std::fmt;
+use urlencoding;
 
 //
 // Search Category
@@ -41,8 +42,10 @@ pub enum QueryFilterType {
 impl fmt::Display for QueryFilterType {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            QueryFilterType::Exact(val) => write!(f, "{}", val),
-            QueryFilterType::Like(val) => write!(f, "{{\"$like\":\"{}\"}}", val),
+            QueryFilterType::Exact(val) => write!(f, "{}", urlencoding::encode(val)),
+            QueryFilterType::Like(val) => {
+                write!(f, "{{\"$like\":\"{}\"}}", urlencoding::encode(val))
+            }
         }
     }
 }

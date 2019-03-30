@@ -5,6 +5,50 @@ use imgui::*;
 use serde::{Deserialize, Serialize};
 use std::collections::VecDeque;
 
+pub mod fonts {
+    pub const FONT_IDX_NORMAL: usize = 1;
+    pub const FONT_IDX_WINDOW_TITLE: usize = 2;
+    pub const FONT_IDX_MENU: usize = 3;
+    pub const FONT_IDX_HEADER: usize = 4;
+    pub const FONT_IDX_MINI: usize = 5;
+}
+
+pub mod rarity {
+    //
+    // const_rgb_int!(NAME, R, G, B)
+    //
+    macro_rules! const_rgb_int {
+        ($name:ident, $r:expr, $g:expr, $b:expr) => {
+            const $name: (f32, f32, f32, f32) =
+                ($r as f32 / 255.0, $g as f32 / 255.0, $b as f32 / 255.0, 1.0);
+        };
+    }
+    const_rgb_int!(RANK1, 191, 191, 191);
+    const_rgb_int!(RANK2, 255, 255, 255);
+    const_rgb_int!(RANK3, 194, 218, 126);
+    const_rgb_int!(RANK4, 127, 191, 105);
+    const_rgb_int!(RANK5, 122, 202, 205);
+    const_rgb_int!(RANK6, 106, 126, 201);
+    const_rgb_int!(RANK7, 184, 146, 216);
+    const_rgb_int!(RANK8, 227, 174, 94);
+
+    pub fn rarity_color(rarity: u32) -> (f32, f32, f32, f32) {
+        match rarity {
+            1 => RANK1,
+            2 => RANK2,
+            3 => RANK3,
+            4 => RANK4,
+            5 => RANK5,
+            6 => RANK6,
+            7 => RANK7,
+            8 => RANK8,
+            _ => (1.0, 1.0, 0.0, 1.0),
+        }
+    }
+}
+
+use fonts::*;
+
 #[derive(Debug)]
 pub struct GuiDetails {
     pub next_start_pos: (f32, f32),
@@ -49,7 +93,7 @@ pub struct CraftingCost {
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Slot {
-    rank: i32,
+    pub rank: i32,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -118,7 +162,7 @@ impl AppState {
             next_start_pos: (0f32, 0f32),
         };
 
-        ui.with_font(2, || {
+        ui.with_font(FONT_IDX_MENU, || {
             ui.main_menu_bar(|| {
                 gui_details.next_start_pos.1 = ui.get_window_size().1;
                 ui.menu(im_str!("File")).build(|| {
@@ -131,7 +175,7 @@ impl AppState {
             });
         });
 
-        ui.with_font(1, || {
+        ui.with_font(FONT_IDX_NORMAL, || {
             self.search_state
                 .layout(&ui, &mut gui_details, &mut self.event_list);
             self.entry_display_state
