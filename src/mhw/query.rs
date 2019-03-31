@@ -1,5 +1,7 @@
-//use super::common::*;
+use imgui::ImStr;
 use itertools::Itertools;
+use num_derive::FromPrimitive;
+use num_traits::FromPrimitive;
 use reqwest;
 use reqwest::Url;
 use serde::de::DeserializeOwned;
@@ -9,10 +11,11 @@ use urlencoding;
 //
 // Search Category
 //
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, FromPrimitive)]
 pub enum SearchCategory {
-    Armor,
-    Weapon,
+    Armor = 0,
+    Weapons,
+    MAX,
 }
 
 impl Default for SearchCategory {
@@ -25,7 +28,8 @@ impl fmt::Display for SearchCategory {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
             SearchCategory::Armor => write!(f, "armor"),
-            SearchCategory::Weapon => write!(f, "weapon"),
+            SearchCategory::Weapons => write!(f, "weapons"),
+            _ => write!(f, "ERROR"),
         }
     }
 }
@@ -140,9 +144,9 @@ pub struct QueryInfo {
 }
 
 impl QueryInfo {
-    pub fn find_ids(text: &str) -> Self {
+    pub fn find_ids(text: &str, category: SearchCategory) -> Self {
         Self {
-            category: Default::default(),
+            category,
             filter: Some(QueryFilter {
                 field_name: "name".to_owned(),
                 filter: QueryFilterType::Like(text.to_owned()),

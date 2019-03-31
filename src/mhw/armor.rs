@@ -22,6 +22,12 @@ pub enum ArmorType {
     Legs,
 }
 
+impl Display for ArmorType {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        Debug::fmt(self, f)
+    }
+}
+
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
 pub enum ArmorRank {
@@ -29,7 +35,7 @@ pub enum ArmorRank {
     High,
 }
 
-impl fmt::Display for ArmorRank {
+impl Display for ArmorRank {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         Debug::fmt(self, f)
     }
@@ -78,7 +84,7 @@ pub enum Gender {
     Female,
 }
 
-impl fmt::Display for Gender {
+impl Display for Gender {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         Debug::fmt(self, f)
     }
@@ -198,7 +204,7 @@ impl MhwWindowContents for ArmorInfo {
             let id_string = format!("id: [{}]", self.id);
             ui.text(id_string.as_str());
             ui.same_line(0.0);
-            ui.text(format!("{} Rank", self.rank));
+            ui.text(format!("{} Rank {}", self.rank, self.type_val));
         });
 
         //=======================================

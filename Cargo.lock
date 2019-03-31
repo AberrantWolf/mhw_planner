@@ -816,6 +816,8 @@ dependencies = [
  "imgui-glium-renderer 0.0.23-pre",
  "imgui-winit-support 0.0.23-pre",
  "itertools 0.8.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "num-derive 0.2.4 (registry+https://github.com/rust-lang/crates.io-index)",
+ "num-traits 0.2.6 (registry+https://github.com/rust-lang/crates.io-index)",
  "reqwest 0.9.11 (registry+https://github.com/rust-lang/crates.io-index)",
  "scraper 0.9.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde 1.0.89 (registry+https://github.com/rust-lang/crates.io-index)",

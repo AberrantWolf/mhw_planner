@@ -2,7 +2,10 @@ use super::armor::ArmorInfo;
 use super::common::{MhwEvent, MhwGui};
 use super::entry_display::EntryDisplayState;
 use super::query::*;
+use super::weapon::WeaponInfo;
 use crate::mhw::common::GuiDetails;
+use num_derive::FromPrimitive;
+use num_traits::FromPrimitive;
 
 use imgui::*;
 use serde::{Deserialize, Serialize};
@@ -45,7 +48,7 @@ impl SearchState {
         self.results.clear();
         self.selected_item = -1;
 
-        let found = QueryInfo::find_ids(self.text.to_str()).execute_mhw_query();
+        let found = QueryInfo::find_ids(self.text.to_str(), self.search_type).execute_mhw_query();
         self.results = match found {
             Ok(v) => v,
             Err(e) => {
@@ -84,7 +87,23 @@ impl SearchState {
                     }
                 }
             }
-            SearchCategory::Weapon => EntryDisplayState::None,
+            SearchCategory::Weapons => {
+                let found: Result<Vec<WeaponInfo>, MHWQueryError> = query.execute_mhw_query();
+                match found {
+                    Ok(mut f) => {
+                        if !f.is_empty() {
+                            EntryDisplayState::Weapon(f.remove(0))
+                        } else {
+                            EntryDisplayState::None
+                        }
+                    }
+                    Err(e) => {
+                        println!("Error retrieving entry: {}", e);
+                        EntryDisplayState::None
+                    }
+                }
+            }
+            _ => EntryDisplayState::None,
         }
     }
 }
@@ -114,7 +133,20 @@ impl MhwGui for SearchState {
             .flags(ImGuiWindowFlags::NoDecoration);;
 
         let mut build_func = || {
-            ui.text(im_str!("Search: "));
+            // select category
+            let mut idx = self.search_type as i32;
+            if ui.combo(
+                im_str!("##category_combo"),
+                &mut idx,
+                &[im_str!("Armor"), im_str!("Weapon")],
+                SearchCategory::MAX as i32,
+            ) {}
+            if let Some(result) = SearchCategory::from_i32(idx) {
+                self.search_type = result;
+            }
+
+            // type name filter string
+            ui.text(im_str!("Name: "));
             ui.same_line(0.0);
             if ui
                 .input_text(im_str!(""), &mut self.text)

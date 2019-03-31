@@ -1,5 +1,6 @@
 use super::armor::*;
 use super::common::{fonts::*, MhwEvent, MhwGui};
+use super::weapon::*;
 use crate::mhw::common::GuiDetails;
 use crate::mhw::common::MhwWindowContents;
 use imgui::*;
@@ -9,6 +10,7 @@ use std::collections::VecDeque;
 pub enum EntryDisplayState {
     None,
     Armor(ArmorInfo),
+    Weapon(WeaponInfo),
 }
 
 impl Default for EntryDisplayState {
@@ -34,6 +36,7 @@ impl MhwGui for EntryDisplayState {
         let title = match self {
             EntryDisplayState::None => im_str!("<Nothing Selected>"),
             EntryDisplayState::Armor(_) => im_str!("Armor Info"),
+            EntryDisplayState::Weapon(_) => im_str!("Weapon Info"),
         };
 
         let window = ui
@@ -48,6 +51,9 @@ impl MhwGui for EntryDisplayState {
                 EntryDisplayState::None => window.build(|| {}),
                 EntryDisplayState::Armor(ref mut armor) => {
                     window.build(|| armor.build_window(ui, details, event_queue))
+                }
+                EntryDisplayState::Weapon(ref mut weapon) => {
+                    window.build(|| weapon.build_window(ui, details, event_queue))
                 } // TODO: add more as I build more entry types
             };
         });

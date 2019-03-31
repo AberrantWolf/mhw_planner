@@ -73,6 +73,7 @@ pub trait MhwWindowContents {
 }
 
 #[derive(Serialize, Deserialize, Debug)]
+#[serde(rename_all = "camelCase")]
 pub enum Element {
     Fire,
     Water,
