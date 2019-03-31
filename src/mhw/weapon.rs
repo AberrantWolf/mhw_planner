@@ -207,9 +207,9 @@ impl Display for PhialType {
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
 pub enum ShellingType {
-    Normal, // TODO: these come in as, e.g., "Normal Lv2", so will need some
-    Long,   // customg deserialization here. :( Currently, all gunlances fail.
-    Wide,
+    Normal(i32), // TODO: these come in as, e.g., "Normal Lv2", so will need some
+    Long(i32),   // customg deserialization here. :( Currently, all gunlances fail.
+    Wide(i32),
 }
 
 impl Display for ShellingType {
@@ -237,17 +237,17 @@ impl Display for SpecialAmmoType {
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct WeaponAttributes {
-    pub ammoCapacities: Option<AmmoCapacities>, //For "light-bowgun" and "heavy-bowgun" weapons only
-    pub affinity: Option<i32>,                  //The affinity of the weapon
-    pub boostType: Option<BoostType>,           //For "insect-glaive" weapons only
-    pub coatings: Option<Vec<Coating>>,         //For "bow" weapons only
-    pub damageType: DamageType,                 //The type of damage the weapon deals
+    pub ammo_capacities: Option<AmmoCapacities>, //For "light-bowgun" and "heavy-bowgun" weapons only
+    pub affinity: Option<i32>,                   //The affinity of the weapon
+    pub boost_type: Option<BoostType>,           //For "insect-glaive" weapons only
+    pub coatings: Option<Vec<Coating>>,          //For "bow" weapons only
+    pub damage_type: DamageType,                 //The type of damage the weapon deals
     pub defense: Option<i32>, //Some weapons (namely "gunlance" types) augment player defense; such weapons indicate that with this field
     pub deviation: Option<Deviation>, //For "light-bowgun" and "heavy-bowgun" weapons only
     pub elderseal: Option<Elderseal>, //The elderseal type attributed to the weapon
-    pub phialType: Option<PhialType>, //For "switch-axe" and "charge-blade" weapons only
-    pub shellingType: Option<ShellingType>, //For "gunlance" weapons only
-    pub specialAmmo: Option<SpecialAmmoType>, //For "light-bowgun" and "heavy-bowgun" weapons only
+    pub phial_type: Option<PhialType>, //For "switch-axe" and "charge-blade" weapons only
+    pub shelling_type: Option<ShellingType>, //For "gunlance" weapons only
+    pub special_ammo: Option<SpecialAmmoType>, //For "light-bowgun" and "heavy-bowgun" weapons only
 }
 
 #[derive(Serialize, Deserialize, Debug)]
