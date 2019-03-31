@@ -4,6 +4,10 @@ use super::common::{
 };
 use crate::widgets::*;
 use imgui::*;
+use onig::*;
+use serde::de;
+use serde::de::Visitor;
+use serde::Deserializer;
 use serde::{Deserialize, Serialize};
 use std::collections::VecDeque;
 use std::fmt::{self, Debug, Display};
@@ -185,17 +189,136 @@ impl Display for Elderseal {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Debug)]
 #[serde(rename_all = "camelCase")]
 pub enum PhialType {
     Impact,
     Element,
     Power,
     PowerElement,
-    Dragon(i32),  // TODO: These come in as, e.g., "dragon 300"... so I'll
-    Exhaust(i32), // need to make some kind of custom deserializer for them.
-    Para(i32),    // At the moment, deserialization of these will fail.
+    Dragon(i32),
+    Exhaust(i32),
+    Paralysis(i32),
     Poison(i32),
+}
+
+fn calc_power(parts: &Captures) -> Option<i32> {
+    if let Some(result) = parts.at(2) {
+        if let Ok(val) = result.parse::<i32>() {
+            Some(val)
+        } else {
+            //println!("{:?}", parts);
+            None
+        }
+    } else {
+        //println!("{:?}", parts);
+        None
+    }
+}
+
+impl<'de> Deserialize<'de> for PhialType {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        struct FieldVisitor;
+
+        const FIELDS: &[&str] = &[
+            "Impact",
+            "Element",
+            "Power",
+            "Power Element",
+            "Dragon XXX",
+            "Exhaust XXX",
+            "Paralysis XXX",
+            "Poison XXX",
+        ];
+
+        impl<'de> Visitor<'de> for FieldVisitor {
+            type Value = PhialType;
+
+            fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+                formatter.write_str("`Normal` or `Long` or `Wide`")
+            }
+
+            fn visit_str<E>(self, value: &str) -> Result<PhialType, E>
+            where
+                E: de::Error,
+            {
+                println!("Parsing value: {}", value);
+                // create the regex
+                // (\D+)[\s]?(\d+)?
+                // ([^0-9]+)([0-9]+)?
+                let re = if let Ok(result) = Regex::new(r"(\D+)\s?(?!\d+)\D?(\d+)?") {
+                    result
+                } else {
+                    return Err(de::Error::unknown_field(value, FIELDS));
+                };
+
+                // split the string
+                let parts = if let Some(result) = re.captures(value) {
+                    result
+                } else {
+                    //println!("{:?}", re.captures(value));
+                    return Err(de::Error::unknown_field(value, FIELDS));
+                };
+
+                let type_name = if let Some(result) = parts.at(1) {
+                    result
+                } else {
+                    //println!("{:?}", parts);
+                    return Err(de::Error::unknown_field(value, FIELDS));
+                };
+
+                match type_name {
+                    "impact" => Ok(PhialType::Impact),
+                    "impact phial" => Ok(PhialType::Impact),
+                    "element" => Ok(PhialType::Element),
+                    "power" => Ok(PhialType::Power),
+                    "power element" => Ok(PhialType::PowerElement),
+                    "power element phial" => Ok(PhialType::PowerElement),
+                    "dragon" => {
+                        if let Some(power) = calc_power(&parts) {
+                            Ok(PhialType::Dragon(power))
+                        } else {
+                            println!("{:?}", parts);
+                            Err(de::Error::unknown_field(value, FIELDS))
+                        }
+                    }
+                    "exhaust" => {
+                        if let Some(power) = calc_power(&parts) {
+                            Ok(PhialType::Exhaust(power))
+                        } else {
+                            println!("{:?}", parts);
+                            Err(de::Error::unknown_field(value, FIELDS))
+                        }
+                    }
+                    "paralysis" => {
+                        if let Some(power) = calc_power(&parts) {
+                            Ok(PhialType::Paralysis(power))
+                        } else {
+                            println!("{:?}", parts);
+                            Err(de::Error::unknown_field(value, FIELDS))
+                        }
+                    }
+                    "poison" => {
+                        if let Some(power) = calc_power(&parts) {
+                            Ok(PhialType::Poison(power))
+                        } else {
+                            println!("{:?}", parts);
+                            Err(de::Error::unknown_field(value, FIELDS))
+                        }
+                    }
+                    _ => {
+                        println!("{:?}", parts);
+                        Err(de::Error::unknown_field(value, FIELDS))
+                    }
+                }
+            }
+        }
+
+        deserializer.deserialize_identifier(FieldVisitor)
+    }
 }
 
 impl Display for PhialType {
@@ -204,12 +327,58 @@ impl Display for PhialType {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug)]
-#[serde(rename_all = "camelCase")]
+#[derive(Serialize, Debug)]
 pub enum ShellingType {
-    Normal(i32), // TODO: these come in as, e.g., "Normal Lv2", so will need some
-    Long(i32),   // customg deserialization here. :( Currently, all gunlances fail.
+    Normal(i32),
+    Long(i32),
     Wide(i32),
+}
+
+impl<'de> Deserialize<'de> for ShellingType {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        struct FieldVisitor;
+
+        const FIELDS: &[&str] = &["Normal LvN", "Long LvN", "Wide LvN"];
+
+        impl<'de> Visitor<'de> for FieldVisitor {
+            type Value = ShellingType;
+
+            fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+                formatter.write_str("`Normal` or `Long` or `Wide`")
+            }
+
+            fn visit_str<E>(self, value: &str) -> Result<ShellingType, E>
+            where
+                E: de::Error,
+            {
+                let mut parts = value.split(' ');
+                let label = parts.next();
+                let lvl = parts.next();
+                let lvl_num = if let Some(lvl_str) = lvl {
+                    let lvl_num_result = lvl_str[2..].parse::<i32>();
+                    if let Ok(val) = lvl_num_result {
+                        val
+                    } else {
+                        return Err(de::Error::unknown_field(value, FIELDS));
+                    }
+                } else {
+                    return Err(de::Error::unknown_field(value, FIELDS));
+                };
+
+                match label {
+                    Some("Normal") => Ok(ShellingType::Normal(lvl_num)),
+                    Some("Long") => Ok(ShellingType::Long(lvl_num)),
+                    Some("Wide") => Ok(ShellingType::Wide(lvl_num)),
+                    _ => Err(de::Error::unknown_field(value, FIELDS)),
+                }
+            }
+        }
+
+        deserializer.deserialize_identifier(FieldVisitor)
+    }
 }
 
 impl Display for ShellingType {
@@ -241,7 +410,7 @@ pub struct WeaponAttributes {
     pub affinity: Option<i32>,                   //The affinity of the weapon
     pub boost_type: Option<BoostType>,           //For "insect-glaive" weapons only
     pub coatings: Option<Vec<Coating>>,          //For "bow" weapons only
-    pub damage_type: DamageType,                 //The type of damage the weapon deals
+    pub damage_type: Option<DamageType>,         //The type of damage the weapon deals
     pub defense: Option<i32>, //Some weapons (namely "gunlance" types) augment player defense; such weapons indicate that with this field
     pub deviation: Option<Deviation>, //For "light-bowgun" and "heavy-bowgun" weapons only
     pub elderseal: Option<Elderseal>, //The elderseal type attributed to the weapon
