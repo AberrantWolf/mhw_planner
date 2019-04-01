@@ -136,7 +136,7 @@ impl ArmorInfo {
                 }
             };
         }
-        if self.resistances_cache.len() < 1 {
+        if self.resistances_cache.is_empty() {
             // see if we need to add anything
             try_add_resistance_row!("Fire", fire);
             try_add_resistance_row!("Water", water);
@@ -149,7 +149,7 @@ impl ArmorInfo {
     }
 
     pub fn skills_data(&mut self) -> &Vec<String> {
-        if self.skills_cache.len() < 1 {
+        if self.skills_cache.is_empty() {
             // see if we need to add anything
             let skills = &self.skills;
             let iter = skills.iter();
@@ -164,9 +164,8 @@ impl ArmorInfo {
     }
 
     pub fn crafting_data(&mut self) -> &Vec<String> {
-        if self.crafting_cache.len() < 1 {
+        if self.crafting_cache.is_empty() {
             let mats = &self.crafting.materials;
-            let crafting_cache = &mut self.crafting_cache;
             for cost in mats {
                 self.crafting_cache.push(cost.item.name.clone());
                 self.crafting_cache.push(cost.quantity.to_string());
@@ -176,7 +175,7 @@ impl ArmorInfo {
     }
 
     pub fn other_data(&mut self) -> &Vec<String> {
-        if self.other_cache.len() < 1 {
+        if self.other_cache.is_empty() {
             if let Some(gender) = &self.attributes.required_gender {
                 self.other_cache.push("Required Gender".to_owned());
                 self.other_cache.push(gender.to_string());
@@ -191,11 +190,11 @@ impl MhwWindowContents for ArmorInfo {
     fn build_window<'a>(
         &mut self,
         ui: &Ui<'a>,
-        details: &mut GuiDetails,
-        event_queue: &mut VecDeque<MhwEvent>,
+        _details: &mut GuiDetails,
+        _event_queue: &mut VecDeque<MhwEvent>, // will need this when linking between objects
     ) {
         //=======================================
-        // Name/ID info
+        // Name/ID
         ui.with_font(FONT_IDX_HEADER, || {
             let imstring = ImString::new(self.name.clone());
             ui.text_colored(rarity_color(self.rarity), &imstring);
@@ -208,7 +207,7 @@ impl MhwWindowContents for ArmorInfo {
         });
 
         //=======================================
-        // Stats info
+        // Core Stats
         ui.columns(3, im_str!("armor_stats"), true);
         // Defense
         ui.with_font(FONT_IDX_WINDOW_TITLE, || {
@@ -279,6 +278,8 @@ impl MhwWindowContents for ArmorInfo {
             ui.text(&imgstr);
         });
 
+        //=======================================
+        // Lists section
         ui.columns(2, im_str!("armor_attribs"), true);
         ui.separator();
         draw_table(

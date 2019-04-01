@@ -4,7 +4,6 @@ use super::entry_display::EntryDisplayState;
 use super::query::*;
 use super::weapon::WeaponInfo;
 use crate::mhw::common::GuiDetails;
-use num_derive::FromPrimitive;
 use num_traits::FromPrimitive;
 
 use imgui::*;

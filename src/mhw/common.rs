@@ -4,6 +4,7 @@ use super::search::SearchState;
 use imgui::*;
 use serde::{Deserialize, Serialize};
 use std::collections::VecDeque;
+use std::fmt::{self, Debug, Display};
 
 pub mod fonts {
     pub const FONT_IDX_NORMAL: usize = 1;
@@ -84,6 +85,12 @@ pub enum Element {
     Poison,
     Sleep,
     Paralysis,
+}
+
+impl Display for Element {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        Debug::fmt(self, f)
+    }
 }
 
 #[derive(Serialize, Deserialize, Debug)]

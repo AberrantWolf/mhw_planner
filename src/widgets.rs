@@ -49,7 +49,9 @@ pub fn draw_table<LabelType: AsRef<str>, DataType: AsRef<str>>(
     child.build(|| {
         // draw all the items!
         if row_count == 0 {
-            ui.text("<none>");
+            ui.with_font(FONT_IDX_NORMAL, || {
+                ui.text("<none>");
+            });
             return;
         }
 

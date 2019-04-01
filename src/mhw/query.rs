@@ -1,7 +1,5 @@
-use imgui::ImStr;
 use itertools::Itertools;
-use num_derive::FromPrimitive;
-use num_traits::FromPrimitive;
+use num_derive::{FromPrimitive, ToPrimitive};
 use reqwest;
 use reqwest::Url;
 use serde::de::DeserializeOwned;
@@ -11,7 +9,7 @@ use urlencoding;
 //
 // Search Category
 //
-#[derive(Debug, Clone, Copy, FromPrimitive)]
+#[derive(Debug, Clone, Copy, FromPrimitive, ToPrimitive)]
 pub enum SearchCategory {
     Armor = 0,
     Weapons,
@@ -87,6 +85,7 @@ impl fmt::Display for QueryFilter {
 // Query Prediction Meta
 //
 #[derive(Debug)]
+#[allow(dead_code)]
 pub enum QueryProjectionMeta {
     Inclusive,
     Exclusive,
@@ -105,15 +104,6 @@ impl Default for QueryProjectionMeta {
 pub struct QueryProjection {
     meta: QueryProjectionMeta,
     fields: Vec<&'static str>,
-}
-
-impl QueryProjection {
-    fn new() -> Self {
-        Self {
-            meta: QueryProjectionMeta::Inclusive,
-            fields: vec![],
-        }
-    }
 }
 
 impl fmt::Display for QueryProjection {
@@ -171,6 +161,7 @@ impl QueryInfo {
         self
     }
 
+    #[allow(dead_code)]
     pub fn with_projection(mut self, proj: QueryProjection) -> Self {
         self.projection = Some(proj);
         self
@@ -221,6 +212,7 @@ impl QueryInfo {
 pub enum MHWQueryError {
     Internal(String),
     API(String),
+    #[allow(dead_code)]
     Unimplemented,
 }
 

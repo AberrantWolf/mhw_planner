@@ -1,6 +1,5 @@
 use super::common::{
-    fonts::*, rarity::*, CraftingCost, Element, GuiDetails, MhwEvent, MhwWindowContents, SkillRank,
-    Slot,
+    fonts::*, rarity::*, CraftingCost, Element, GuiDetails, MhwEvent, MhwWindowContents, Slot,
 };
 use crate::widgets::*;
 use imgui::*;
@@ -9,8 +8,15 @@ use serde::de;
 use serde::de::Visitor;
 use serde::Deserializer;
 use serde::{Deserialize, Serialize};
+use serde_aux::prelude::*;
+use std::collections::BTreeMap;
+use std::collections::HashMap;
 use std::collections::VecDeque;
 use std::fmt::{self, Debug, Display};
+
+const ELEMENTS_COLUMNS: [&str; 3] = ["Name", "Damage", "Hidden"];
+const CRAFTING_COLUMNS: [&str; 2] = ["Item", "Count"];
+const ATTR_COLUMNS: [&str; 2] = ["Category", "Value"];
 
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(rename_all = "kebab-case")]
@@ -33,7 +39,22 @@ pub enum WeaponType {
 
 impl Display for WeaponType {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        Debug::fmt(self, f)
+        match self {
+            WeaponType::GreatSword => write!(f, "Great Sword"),
+            WeaponType::LongSword => write!(f, "Long Sword"),
+            WeaponType::SwordAndShield => write!(f, "Sword and Shield"),
+            WeaponType::DualBlades => write!(f, "Dual Blades"),
+            WeaponType::Hammer => write!(f, "Hammer"),
+            WeaponType::HuntingHorn => write!(f, "Hunting Horn"),
+            WeaponType::Lance => write!(f, "Lance"),
+            WeaponType::Gunlance => write!(f, "Gunlance"),
+            WeaponType::SwitchAxe => write!(f, "Switch Axe"),
+            WeaponType::ChargeBlade => write!(f, "Charge Blade"),
+            WeaponType::InsectGlaive => write!(f, "Insect Glaive"),
+            WeaponType::LightBowgun => write!(f, "Light Bowgun"),
+            WeaponType::HeavyBowgun => write!(f, "Heavy Bowgun"),
+            WeaponType::Bow => write!(f, "Bow"),
+        }
     }
 }
 
@@ -84,29 +105,35 @@ pub struct WeaponSharpness {
     pub white: i32,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, PartialEq, Eq, PartialOrd, Ord)]
 #[serde(rename_all = "camelCase")]
-pub struct AmmoCapacities {
-    pub normal: Vec<i32>,
-    pub flaming: Vec<i32>,
-    pub piercing: Vec<i32>,
-    pub water: Vec<i32>,
-    pub spread: Vec<i32>,
-    pub freeze: Vec<i32>,
-    pub sticky: Vec<i32>,
-    pub thunder: Vec<i32>,
-    pub cluster: Vec<i32>,
-    pub dragon: Vec<i32>,
-    pub recover: Vec<i32>,
-    pub slicing: Vec<i32>,
-    pub poison: Vec<i32>,
-    pub wyvern: Vec<i32>,
-    pub paralysis: Vec<i32>,
-    pub demon: Vec<i32>,
-    pub sleep: Vec<i32>,
-    pub armor: Vec<i32>,
-    pub exhaust: Vec<i32>,
-    pub tranq: Vec<i32>,
+pub enum AmmoType {
+    Normal,
+    Flaming,
+    Piercing,
+    Water,
+    Spread,
+    Freeze,
+    Sticky,
+    Thunder,
+    Cluster,
+    Dragon,
+    Recover,
+    Slicing,
+    Poison,
+    Wyvern,
+    Paralysis,
+    Demon,
+    Sleep,
+    Armor,
+    Exhaust,
+    Tranq,
+}
+
+impl Display for AmmoType {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        Debug::fmt(self, f)
+    }
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -399,18 +426,18 @@ pub enum SpecialAmmoType {
 
 impl Display for SpecialAmmoType {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        Debug::fmt(self, f)
+        write!(f, "Wyvern {}", self)
     }
 }
 
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct WeaponAttributes {
-    pub ammo_capacities: Option<AmmoCapacities>, //For "light-bowgun" and "heavy-bowgun" weapons only
-    pub affinity: Option<i32>,                   //The affinity of the weapon
-    pub boost_type: Option<BoostType>,           //For "insect-glaive" weapons only
-    pub coatings: Option<Vec<Coating>>,          //For "bow" weapons only
-    pub damage_type: Option<DamageType>,         //The type of damage the weapon deals
+    pub ammo_capacities: Option<BTreeMap<AmmoType, Vec<i32>>>, //For "light-bowgun" and "heavy-bowgun" weapons only
+    pub affinity: Option<i32>,                                 //The affinity of the weapon
+    pub boost_type: Option<BoostType>,                         //For "insect-glaive" weapons only
+    pub coatings: Option<Vec<Coating>>,                        //For "bow" weapons only
+    pub damage_type: Option<DamageType>,                       //The type of damage the weapon deals
     pub defense: Option<i32>, //Some weapons (namely "gunlance" types) augment player defense; such weapons indicate that with this field
     pub deviation: Option<Deviation>, //For "light-bowgun" and "heavy-bowgun" weapons only
     pub elderseal: Option<Elderseal>, //The elderseal type attributed to the weapon
@@ -434,21 +461,214 @@ pub struct WeaponInfo {
     pub assets: WeaponAssets,
     #[serde(default)]
     pub durability: Vec<WeaponSharpness>, // base at level 0, increasing handicraft levels
+    //#[serde(deserialize_with = "deserialize_struct_case_insensitive")]
     pub attributes: WeaponAttributes,
+
     // internal details
-    // ...
+    #[serde(skip)]
+    crafting_cache: Vec<String>,
+    #[serde(skip)]
+    upgrade_cache: Vec<String>,
+    #[serde(skip)]
+    attributes_cache: Vec<String>,
+}
+
+impl WeaponInfo {
+    fn crafting_data(&mut self) -> &Vec<String> {
+        if self.crafting_cache.is_empty() {
+            let mats = &self.crafting.crafting_materials;
+            for cost in mats {
+                self.crafting_cache.push(cost.item.name.clone());
+                self.crafting_cache.push(cost.quantity.to_string());
+            }
+        }
+        &self.crafting_cache
+    }
+
+    fn upgrading_data(&mut self) -> &Vec<String> {
+        if self.upgrade_cache.is_empty() {
+            let mats = &self.crafting.upgrade_materials;
+            for cost in mats {
+                self.upgrade_cache.push(cost.item.name.clone());
+                self.upgrade_cache.push(cost.quantity.to_string());
+            }
+        }
+        &self.upgrade_cache
+    }
+
+    fn attribute_data(&mut self) -> &Vec<String> {
+        if self.attributes_cache.is_empty() {
+            let attribs = &self.attributes;
+            if let Some(ammo_caps_map) = &attribs.ammo_capacities {
+                self.attributes_cache.push("Ammo Capacities".to_owned());
+                self.attributes_cache.push("".to_owned());
+
+                for (ammo_type, caps) in ammo_caps_map {
+                    // TODO: Format levels nicely (hiding levels with no ammo)
+                    // TODO: Don't show ammo with no capacities at any level
+                    // TODO: Add a "show full detail" toggle to show all the zeros anyway
+                    self.attributes_cache.push(format!("    {}", ammo_type));
+                    self.attributes_cache.push(format!("{:?}", caps));
+                }
+            }
+            if let Some(attr) = &attribs.affinity {
+                self.attributes_cache.push("Affinity".to_owned());
+                self.attributes_cache.push(attr.to_string());
+            }
+            if let Some(attr) = &attribs.boost_type {
+                self.attributes_cache.push("Boost Type".to_owned());
+                self.attributes_cache.push(attr.to_string());
+            }
+            if let Some(attr) = &attribs.coatings {
+                self.attributes_cache.push("Coatings".to_owned());
+                self.attributes_cache.push(format!("{:?}", attr));
+                // TODO: make look better
+            }
+            if let Some(attr) = &attribs.damage_type {
+                self.attributes_cache.push("Damage Type".to_owned());
+                self.attributes_cache.push(attr.to_string());
+            }
+            if let Some(attr) = &attribs.defense {
+                self.attributes_cache.push("Defense".to_owned());
+                self.attributes_cache.push(attr.to_string());
+            }
+            if let Some(attr) = &attribs.deviation {
+                self.attributes_cache.push("Deviation".to_owned());
+                self.attributes_cache.push("".to_owned());
+                // TODO: implement
+            }
+            if let Some(attr) = &attribs.elderseal {
+                self.attributes_cache.push("Elderseal".to_owned());
+                self.attributes_cache.push(attr.to_string());
+            }
+            if let Some(attr) = &attribs.phial_type {
+                self.attributes_cache.push("Phial Type".to_owned());
+                self.attributes_cache.push("".to_owned());
+                // TODO: implement
+            }
+            if let Some(attr) = &attribs.shelling_type {
+                self.attributes_cache.push("Shelling Type".to_owned());
+                self.attributes_cache.push("".to_owned());
+                // TODO: implement
+            }
+            if let Some(attr) = &attribs.special_ammo {
+                self.attributes_cache.push("Special Ammo".to_owned());
+                self.attributes_cache.push(attr.to_string());
+            }
+        }
+        &self.attributes_cache
+    }
 }
 
 impl MhwWindowContents for WeaponInfo {
     fn build_window<'a>(
         &mut self,
         ui: &Ui<'a>,
-        details: &mut GuiDetails,
-        event_queue: &mut VecDeque<MhwEvent>,
+        _details: &mut GuiDetails,
+        _event_queue: &mut VecDeque<MhwEvent>,
     ) {
+        //=======================================
+        // Name/ID
         ui.with_font(FONT_IDX_HEADER, || {
             let imstring = ImString::new(self.name.clone());
             ui.text_colored(rarity_color(self.rarity), &imstring);
         });
+        ui.with_font(FONT_IDX_MINI, || {
+            let id_string = format!("id: [{}]", self.id);
+            ui.text(id_string.as_str());
+            ui.same_line(0.0);
+            ui.text(self.type_val.to_string());
+        });
+
+        //=======================================
+        // Core Stats
+        ui.columns(4, im_str!("armor_stats"), true);
+        // Attack
+        ui.with_font(FONT_IDX_WINDOW_TITLE, || {
+            let text = im_str!("Attack");
+            ui.text(text);
+        });
+        ui.with_font(FONT_IDX_NORMAL, || {
+            ui.text(format!("{}/({})", self.attack.display, self.attack.raw));
+        });
+
+        // Elements
+        ui.next_column();
+        ui.with_font(FONT_IDX_WINDOW_TITLE, || {
+            let text = im_str!("Elements");
+            ui.text(text);
+        });
+        for elem in &self.elements {
+            ui.text(format!("{}: ", elem.elememt));
+            ui.same_line(0.0);
+            ui.with_font(FONT_IDX_NORMAL, || {
+                ui.text(format!("{}", elem.damage));
+            });
+        }
+
+        // Slots
+        ui.next_column();
+        ui.with_font(FONT_IDX_WINDOW_TITLE, || {
+            let text = im_str!("Slot Info");
+            ui.text(text);
+        });
+        for idx in 0..3 {
+            match self.slots.get(idx) {
+                Some(val) => match val.rank {
+                    1 => {
+                        ui.text("[1]");
+                        ui.same_line(0.0);
+                    }
+                    2 => {
+                        ui.text("[2]");
+                        ui.same_line(0.0);
+                    }
+                    3 => {
+                        ui.text("[3]");
+                        ui.same_line(0.0);
+                    }
+                    _ => {
+                        ui.text("[E]");
+                        ui.same_line(0.0);
+                    }
+                },
+                None => {
+                    ui.text("[-]");
+                    ui.same_line(0.0);
+                }
+            }
+        }
+        ui.new_line();
+
+        // Durability
+        ui.next_column();
+        ui.with_font(FONT_IDX_WINDOW_TITLE, || {
+            let text = im_str!("Durability");
+            ui.text(text);
+        });
+        // TODO: draw durability tables
+
+        //=======================================
+        // Lists section
+        ui.columns(2, im_str!("armor_attribs"), true);
+        ui.separator();
+        // Maybe don't need elements, as there seems to only ever be 0/1 of them.
+        //draw_table(ui, "Elements", &ELEMENTS_COLUMNS, self.elements_data());
+        if self.crafting.craftable {
+            draw_table(ui, "Crafting", &CRAFTING_COLUMNS, self.crafting_data());
+        }
+
+        if let Some(previous) = self.crafting.previous {
+            ui.text("Upgrade From: ");
+            ui.same_line(0.0);
+            ui.with_font(FONT_IDX_NORMAL, || {
+                // TODO: once we cache item names, fetch the previous item name from ID
+                ui.text(format!("id [{}]", previous));
+            });
+            draw_table(ui, "Required", &CRAFTING_COLUMNS, self.upgrading_data());
+        }
+
+        ui.next_column();
+        draw_table(ui, "Attributes", &ATTR_COLUMNS, self.attribute_data());
     }
 }
