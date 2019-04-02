@@ -1,7 +1,9 @@
 use super::mhw::common::fonts::*;
 use imgui::*;
+use std::fmt::Debug;
 
 pub trait TableDataModel {
+    fn is_empty(&self) -> bool;
     fn col_count(&self) -> usize;
     fn row_count(&self) -> usize;
     fn draw_cell(&self, ui: &Ui, col: usize, row: usize);
@@ -21,16 +23,16 @@ impl SimpleTableDataModel {
         }
     }
 
-    pub fn is_empty(&self) -> bool {
-        self.col_count == 0
-    }
-
     pub fn set_columns(&mut self, cols: usize) {
         self.col_count = cols;
     }
 
     pub fn push(&mut self, cell: String) {
         self.data.push(cell);
+    }
+
+    pub fn append(&mut self, mut other: Vec<String>) {
+        self.data.append(&mut other);
     }
 }
 
@@ -41,11 +43,19 @@ impl Default for SimpleTableDataModel {
 }
 
 impl TableDataModel for SimpleTableDataModel {
+    fn is_empty(&self) -> bool {
+        self.col_count == 0
+    }
+
     fn col_count(&self) -> usize {
         self.col_count
     }
 
     fn row_count(&self) -> usize {
+        if self.data.is_empty() || self.col_count == 0 {
+            return 0;
+        }
+
         let extra = if self.data.len() % self.col_count() > 0 {
             1
         } else {
@@ -55,8 +65,70 @@ impl TableDataModel for SimpleTableDataModel {
     }
 
     fn draw_cell(&self, ui: &Ui, col: usize, row: usize) {
+        if col >= self.col_count() {
+            return;
+        }
         if let Some(datum) = self.data.get(row * self.col_count + col) {
             ui.text(datum.as_str());
+        }
+    }
+}
+
+#[derive(Debug)]
+// TODO: Can the underlying table's vectors get changed after adding?
+pub struct CompoundTableDataModel<T: TableDataModel + Debug> {
+    max_cols: usize,
+    total_rows: usize,
+    tables: Vec<Box<T>>,
+}
+
+impl<T: TableDataModel + Debug> CompoundTableDataModel<T> {
+    fn new() -> Self {
+        CompoundTableDataModel {
+            max_cols: 0,
+            total_rows: 0,
+            tables: vec![],
+        }
+    }
+
+    fn push(&mut self, table: T) {
+        let col_count = table.col_count();
+        if col_count > self.max_cols {
+            self.max_cols = col_count
+        };
+        self.total_rows += table.row_count();
+        self.tables.push(Box::new(table));
+    }
+}
+
+impl<T: TableDataModel + Debug> TableDataModel for CompoundTableDataModel<T> {
+    fn is_empty(&self) -> bool {
+        self.tables.is_empty()
+    }
+
+    fn col_count(&self) -> usize {
+        self.max_cols
+    }
+
+    fn row_count(&self) -> usize {
+        self.total_rows
+    }
+
+    fn draw_cell(&self, ui: &Ui, col: usize, row: usize) {
+        if self.tables.is_empty() {
+            return;
+        }
+        if col >= self.col_count() {
+            return;
+        }
+
+        let mut actual_row = row;
+        for table in &self.tables {
+            if table.row_count() <= row {
+                actual_row -= table.row_count();
+            } else {
+                table.draw_cell(ui, col, actual_row);
+            }
         }
     }
 }

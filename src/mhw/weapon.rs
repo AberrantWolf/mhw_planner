@@ -470,6 +470,7 @@ pub struct WeaponInfo {
 impl WeaponInfo {
     fn crafting_data(&mut self) -> &TableDataModel {
         if self.crafting_cache.is_empty() {
+            self.crafting_cache.set_columns(2);
             let mats = &self.crafting.crafting_materials;
             for cost in mats {
                 self.crafting_cache.push(cost.item.name.clone());
@@ -481,6 +482,7 @@ impl WeaponInfo {
 
     fn upgrading_data(&mut self) -> &TableDataModel {
         if self.upgrade_cache.is_empty() {
+            self.upgrade_cache.set_columns(2);
             let mats = &self.crafting.upgrade_materials;
             for cost in mats {
                 self.upgrade_cache.push(cost.item.name.clone());
@@ -492,17 +494,28 @@ impl WeaponInfo {
 
     fn attribute_data(&mut self) -> &TableDataModel {
         if self.attributes_cache.is_empty() {
+            self.attributes_cache.set_columns(2);
             let attribs = &self.attributes;
             if let Some(ammo_caps_map) = &attribs.ammo_capacities {
                 self.attributes_cache.push("Ammo Capacities".to_owned());
                 self.attributes_cache.push("".to_owned());
 
                 for (ammo_type, caps) in ammo_caps_map {
-                    // TODO: Format levels nicely (hiding levels with no ammo)
-                    // TODO: Don't show ammo with no capacities at any level
-                    // TODO: Add a "show full detail" toggle to show all the zeros anyway
-                    self.attributes_cache.push(format!("    {}", ammo_type));
-                    self.attributes_cache.push(format!("{:?}", caps));
+                    let mut has_caps = false;
+                    let mut cap_strings: Vec<String> = vec![];
+                    for (idx, cap) in caps.iter().enumerate() {
+                        if *cap > 0 {
+                            cap_strings.push(format!("  Lv{}: {}", idx + 1, cap));
+                            cap_strings.push("".to_owned());
+                            has_caps = true;
+                        }
+                    }
+                    cap_strings.pop();
+
+                    if has_caps {
+                        self.attributes_cache.push(format!("    {}", ammo_type));
+                        self.attributes_cache.append(cap_strings);
+                    }
                 }
             }
             if let Some(attr) = &attribs.affinity {

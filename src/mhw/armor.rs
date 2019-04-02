@@ -146,6 +146,7 @@ impl ArmorInfo {
 
     pub fn skills_data(&mut self) -> &TableDataModel {
         if self.skills_cache.is_empty() {
+            self.skills_cache.set_columns(2);
             // see if we need to add anything
             let skills = &self.skills;
             let iter = skills.iter();
@@ -161,6 +162,7 @@ impl ArmorInfo {
 
     pub fn crafting_data(&mut self) -> &TableDataModel {
         if self.crafting_cache.is_empty() {
+            self.crafting_cache.set_columns(2);
             let mats = &self.crafting.materials;
             for cost in mats {
                 self.crafting_cache.push(cost.item.name.clone());
@@ -172,6 +174,7 @@ impl ArmorInfo {
 
     pub fn other_data(&mut self) -> &TableDataModel {
         if self.other_cache.is_empty() {
+            self.other_cache.set_columns(2);
             if let Some(gender) = &self.attributes.required_gender {
                 self.other_cache.push("Required Gender".to_owned());
                 self.other_cache.push(gender.to_string());
