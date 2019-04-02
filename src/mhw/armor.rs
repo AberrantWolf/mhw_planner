@@ -7,11 +7,6 @@ use serde::{Deserialize, Serialize};
 use std::collections::VecDeque;
 use std::fmt::{self, Debug, Display};
 
-const RESISTANCES_COLUMNS: [&str; 2] = ["Name", "Value"];
-const SKILLS_COLUMNS: [&str; 2] = ["Name", "Level"];
-const CRAFTING_COLUMNS: [&str; 2] = ["Item", "Count"];
-const OTHER_COLUMNS: [&str; 2] = ["Label", "Value"];
-
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
 pub enum ArmorType {
@@ -116,17 +111,17 @@ pub struct ArmorInfo {
 
     // internal details
     #[serde(skip)]
-    pub resistances_cache: Vec<String>,
+    pub resistances_cache: SimpleTableDataModel,
     #[serde(skip)]
-    pub skills_cache: Vec<String>,
+    pub skills_cache: SimpleTableDataModel,
     #[serde(skip)]
-    pub crafting_cache: Vec<String>,
+    pub crafting_cache: SimpleTableDataModel,
     #[serde(skip)]
-    pub other_cache: Vec<String>,
+    pub other_cache: SimpleTableDataModel,
 }
 
 impl ArmorInfo {
-    pub fn resistances_data(&mut self) -> &Vec<String> {
+    pub fn resistances_data(&mut self) -> &TableDataModel {
         macro_rules! try_add_resistance_row {
             ($name:expr, $elem:ident) => {
                 if self.resistances.$elem != 0 {
@@ -137,6 +132,7 @@ impl ArmorInfo {
             };
         }
         if self.resistances_cache.is_empty() {
+            self.resistances_cache.set_columns(2);
             // see if we need to add anything
             try_add_resistance_row!("Fire", fire);
             try_add_resistance_row!("Water", water);
@@ -148,7 +144,7 @@ impl ArmorInfo {
         &self.resistances_cache
     }
 
-    pub fn skills_data(&mut self) -> &Vec<String> {
+    pub fn skills_data(&mut self) -> &TableDataModel {
         if self.skills_cache.is_empty() {
             // see if we need to add anything
             let skills = &self.skills;
@@ -163,7 +159,7 @@ impl ArmorInfo {
         &self.skills_cache
     }
 
-    pub fn crafting_data(&mut self) -> &Vec<String> {
+    pub fn crafting_data(&mut self) -> &TableDataModel {
         if self.crafting_cache.is_empty() {
             let mats = &self.crafting.materials;
             for cost in mats {
@@ -174,7 +170,7 @@ impl ArmorInfo {
         &self.crafting_cache
     }
 
-    pub fn other_data(&mut self) -> &Vec<String> {
+    pub fn other_data(&mut self) -> &TableDataModel {
         if self.other_cache.is_empty() {
             if let Some(gender) = &self.attributes.required_gender {
                 self.other_cache.push("Required Gender".to_owned());
@@ -282,20 +278,15 @@ impl MhwWindowContents for ArmorInfo {
         // Lists section
         ui.columns(2, im_str!("armor_attribs"), true);
         ui.separator();
-        draw_table(
-            ui,
-            "Resistances",
-            &RESISTANCES_COLUMNS,
-            self.resistances_data(),
-        );
+        draw_table(ui, "Resistances", self.resistances_data());
 
         ui.next_column();
-        draw_table(ui, "Skills", &SKILLS_COLUMNS, self.skills_data());
+        draw_table(ui, "Skills", self.skills_data());
 
         ui.next_column();
-        draw_table(ui, "Crafting", &CRAFTING_COLUMNS, self.crafting_data());
+        draw_table(ui, "Crafting", self.crafting_data());
 
         ui.next_column();
-        draw_table(ui, "Other Attribs", &OTHER_COLUMNS, self.other_data());
+        draw_table(ui, "Other Attribs", self.other_data());
     }
 }

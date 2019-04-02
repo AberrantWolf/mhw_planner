@@ -141,9 +141,8 @@ where
             );
 
             if let Event::WindowEvent { event, .. } = event {
-                match event {
-                    CloseRequested => quit = true,
-                    _ => (),
+                if let CloseRequested = event {
+                    quit = true
                 }
             }
         });

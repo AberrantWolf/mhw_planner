@@ -8,15 +8,9 @@ use serde::de;
 use serde::de::Visitor;
 use serde::Deserializer;
 use serde::{Deserialize, Serialize};
-use serde_aux::prelude::*;
 use std::collections::BTreeMap;
-use std::collections::HashMap;
 use std::collections::VecDeque;
 use std::fmt::{self, Debug, Display};
-
-const ELEMENTS_COLUMNS: [&str; 3] = ["Name", "Damage", "Hidden"];
-const CRAFTING_COLUMNS: [&str; 2] = ["Item", "Count"];
-const ATTR_COLUMNS: [&str; 2] = ["Category", "Value"];
 
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(rename_all = "kebab-case")]
@@ -466,15 +460,15 @@ pub struct WeaponInfo {
 
     // internal details
     #[serde(skip)]
-    crafting_cache: Vec<String>,
+    crafting_cache: SimpleTableDataModel,
     #[serde(skip)]
-    upgrade_cache: Vec<String>,
+    upgrade_cache: SimpleTableDataModel,
     #[serde(skip)]
-    attributes_cache: Vec<String>,
+    attributes_cache: SimpleTableDataModel,
 }
 
 impl WeaponInfo {
-    fn crafting_data(&mut self) -> &Vec<String> {
+    fn crafting_data(&mut self) -> &TableDataModel {
         if self.crafting_cache.is_empty() {
             let mats = &self.crafting.crafting_materials;
             for cost in mats {
@@ -485,7 +479,7 @@ impl WeaponInfo {
         &self.crafting_cache
     }
 
-    fn upgrading_data(&mut self) -> &Vec<String> {
+    fn upgrading_data(&mut self) -> &TableDataModel {
         if self.upgrade_cache.is_empty() {
             let mats = &self.crafting.upgrade_materials;
             for cost in mats {
@@ -496,7 +490,7 @@ impl WeaponInfo {
         &self.upgrade_cache
     }
 
-    fn attribute_data(&mut self) -> &Vec<String> {
+    fn attribute_data(&mut self) -> &TableDataModel {
         if self.attributes_cache.is_empty() {
             let attribs = &self.attributes;
             if let Some(ammo_caps_map) = &attribs.ammo_capacities {
@@ -522,7 +516,7 @@ impl WeaponInfo {
             if let Some(attr) = &attribs.coatings {
                 self.attributes_cache.push("Coatings".to_owned());
                 self.attributes_cache.push(format!("{:?}", attr));
-                // TODO: make look better
+                // TODO: make look betterce
             }
             if let Some(attr) = &attribs.damage_type {
                 self.attributes_cache.push("Damage Type".to_owned());
@@ -655,7 +649,7 @@ impl MhwWindowContents for WeaponInfo {
         // Maybe don't need elements, as there seems to only ever be 0/1 of them.
         //draw_table(ui, "Elements", &ELEMENTS_COLUMNS, self.elements_data());
         if self.crafting.craftable {
-            draw_table(ui, "Crafting", &CRAFTING_COLUMNS, self.crafting_data());
+            draw_table(ui, "Crafting", self.crafting_data());
         }
 
         if let Some(previous) = self.crafting.previous {
@@ -665,10 +659,10 @@ impl MhwWindowContents for WeaponInfo {
                 // TODO: once we cache item names, fetch the previous item name from ID
                 ui.text(format!("id [{}]", previous));
             });
-            draw_table(ui, "Required", &CRAFTING_COLUMNS, self.upgrading_data());
+            draw_table(ui, "Required", self.upgrading_data());
         }
 
         ui.next_column();
-        draw_table(ui, "Attributes", &ATTR_COLUMNS, self.attribute_data());
+        draw_table(ui, "Attributes", self.attribute_data());
     }
 }
