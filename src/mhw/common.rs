@@ -14,16 +14,21 @@ pub mod fonts {
     pub const FONT_IDX_MINI: usize = 5;
 }
 
-pub mod rarity {
+#[macro_use]
+pub mod macros {
     //
     // const_rgb_int!(NAME, R, G, B)
     //
+    #[macro_export]
     macro_rules! const_rgb_int {
         ($name:ident, $r:expr, $g:expr, $b:expr) => {
             const $name: (f32, f32, f32, f32) =
                 ($r as f32 / 255.0, $g as f32 / 255.0, $b as f32 / 255.0, 1.0);
         };
     }
+}
+
+pub mod rarity {
     const_rgb_int!(RANK1, 191, 191, 191);
     const_rgb_int!(RANK2, 255, 255, 255);
     const_rgb_int!(RANK3, 194, 218, 126);

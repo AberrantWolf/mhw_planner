@@ -1,7 +1,7 @@
 use super::common::{
     fonts::*, rarity::*, CraftingCost, GuiDetails, MhwEvent, MhwWindowContents, SkillRank, Slot,
 };
-use crate::widgets::*;
+use crate::widgets::table_view::*;
 use imgui::*;
 use serde::{Deserialize, Serialize};
 use std::collections::VecDeque;

@@ -1,7 +1,7 @@
 use super::common::{
     fonts::*, rarity::*, CraftingCost, Element, GuiDetails, MhwEvent, MhwWindowContents, Slot,
 };
-use crate::widgets::*;
+use crate::widgets::table_view::*;
 use imgui::*;
 use onig::*;
 use serde::de;
@@ -91,12 +91,69 @@ pub struct WeaponAssets {
 // For 100px view, the pixel width = ([sharpness] * 100) / 400
 // using integer-only maths.
 pub struct WeaponSharpness {
-    pub red: i32,
-    pub orange: i32,
-    pub yellow: i32,
-    pub green: i32,
-    pub blue: i32,
-    pub white: i32,
+    pub red: f32,
+    pub orange: f32,
+    pub yellow: f32,
+    pub green: f32,
+    pub blue: f32,
+    pub white: f32,
+}
+
+impl WeaponSharpness {
+    pub fn draw(&self, ui: &Ui) {
+        static SHARPNESS_HEIGHT: f32 = 7.0;
+        static OUTLINE_COLOR: (f32, f32, f32, f32) = (0.2, 0.2, 0.2, 1.0);
+
+        let start_pos = ui.get_cursor_screen_pos();
+        let content_avail = ui.get_content_region_avail();
+        let end_pos = (
+            start_pos.0 + content_avail.0,
+            start_pos.1 + SHARPNESS_HEIGHT,
+        );
+        let draw_list = ui.get_window_draw_list();
+
+        //               sharpness   total_width
+        // total_width * --------- = ----------- * sharpness
+        //                  400          400
+        let width_mod = content_avail.0 / 400.0;
+
+        const_rgb_int!(SHARP_RED, 217, 44, 44);
+        const_rgb_int!(SHARP_ORG, 217, 102, 44);
+        const_rgb_int!(SHARP_YEL, 217, 209, 44);
+        const_rgb_int!(SHARP_GRN, 112, 217, 44);
+        const_rgb_int!(SHARP_BLU, 44, 134, 217);
+        const_rgb_int!(SHARP_WHT, 255, 255, 255);
+
+        let mut next_start = start_pos;
+        let mut next_end = start_pos;
+
+        macro_rules! draw_next_segment {
+            ($segment:ident, $color:expr) => {
+                next_start = (next_end.0, next_start.1);
+                next_end = (
+                    next_start.0 + self.$segment as f32 * width_mod,
+                    next_start.1 + SHARPNESS_HEIGHT,
+                );
+                draw_list
+                    .add_rect(next_start, next_end, $color)
+                    .filled(true)
+                    .build();
+            };
+        }
+        draw_next_segment!(red, SHARP_RED);
+        draw_next_segment!(orange, SHARP_ORG);
+        draw_next_segment!(yellow, SHARP_YEL);
+        draw_next_segment!(green, SHARP_GRN);
+        draw_next_segment!(blue, SHARP_BLU);
+        draw_next_segment!(white, SHARP_WHT);
+
+        draw_list
+            .add_rect(start_pos, end_pos, OUTLINE_COLOR)
+            .filled(false)
+            .build();
+
+        ui.set_cursor_screen_pos((start_pos.0, end_pos.1));
+    }
 }
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Eq, PartialOrd, Ord)]
@@ -496,7 +553,7 @@ impl WeaponInfo {
         if self.attributes_cache.is_empty() {
             self.attributes_cache.set_columns(2);
             let attribs = &self.attributes;
-            if let Some(ammo_caps_map) = &attribs.ammo_capacities {
+            if let Some(ref ammo_caps_map) = attribs.ammo_capacities {
                 self.attributes_cache.push("Ammo Capacities".to_owned());
                 self.attributes_cache.push("".to_owned());
 
@@ -518,47 +575,47 @@ impl WeaponInfo {
                     }
                 }
             }
-            if let Some(attr) = &attribs.affinity {
+            if let Some(ref attr) = attribs.affinity {
                 self.attributes_cache.push("Affinity".to_owned());
                 self.attributes_cache.push(attr.to_string());
             }
-            if let Some(attr) = &attribs.boost_type {
+            if let Some(ref attr) = attribs.boost_type {
                 self.attributes_cache.push("Boost Type".to_owned());
                 self.attributes_cache.push(attr.to_string());
             }
-            if let Some(attr) = &attribs.coatings {
+            if let Some(ref attr) = attribs.coatings {
                 self.attributes_cache.push("Coatings".to_owned());
-                self.attributes_cache.push(format!("{:?}", attr));
-                // TODO: make look betterce
+                for coating in attr {
+                    self.attributes_cache.push(format!("{}", coating));
+                    self.attributes_cache.push("".to_owned());
+                }
+                self.attributes_cache.pop();
             }
-            if let Some(attr) = &attribs.damage_type {
+            if let Some(ref attr) = attribs.damage_type {
                 self.attributes_cache.push("Damage Type".to_owned());
                 self.attributes_cache.push(attr.to_string());
             }
-            if let Some(attr) = &attribs.defense {
+            if let Some(ref attr) = attribs.defense {
                 self.attributes_cache.push("Defense".to_owned());
                 self.attributes_cache.push(attr.to_string());
             }
-            if let Some(attr) = &attribs.deviation {
+            if let Some(ref attr) = attribs.deviation {
                 self.attributes_cache.push("Deviation".to_owned());
-                self.attributes_cache.push("".to_owned());
-                // TODO: implement
+                self.attributes_cache.push(format!("{}", attr));
             }
-            if let Some(attr) = &attribs.elderseal {
+            if let Some(ref attr) = attribs.elderseal {
                 self.attributes_cache.push("Elderseal".to_owned());
                 self.attributes_cache.push(attr.to_string());
             }
-            if let Some(attr) = &attribs.phial_type {
+            if let Some(ref attr) = attribs.phial_type {
                 self.attributes_cache.push("Phial Type".to_owned());
-                self.attributes_cache.push("".to_owned());
-                // TODO: implement
+                self.attributes_cache.push(format!("{}", attr));
             }
-            if let Some(attr) = &attribs.shelling_type {
+            if let Some(ref attr) = attribs.shelling_type {
                 self.attributes_cache.push("Shelling Type".to_owned());
-                self.attributes_cache.push("".to_owned());
-                // TODO: implement
+                self.attributes_cache.push(format!("{}", attr));
             }
-            if let Some(attr) = &attribs.special_ammo {
+            if let Some(ref attr) = attribs.special_ammo {
                 self.attributes_cache.push("Special Ammo".to_owned());
                 self.attributes_cache.push(attr.to_string());
             }
@@ -653,7 +710,13 @@ impl MhwWindowContents for WeaponInfo {
             let text = im_str!("Durability");
             ui.text(text);
         });
-        // TODO: draw durability tables
+        for durability in &self.durability {
+            durability.draw(&ui);
+        }
+        {
+            let cursor = ui.get_cursor_screen_pos();
+            ui.set_cursor_screen_pos((cursor.0, cursor.1 + ui.imgui().style().frame_padding.y));
+        }
 
         //=======================================
         // Lists section
