@@ -1,6 +1,5 @@
-use super::armor::*;
 use super::common::{fonts::*, MhwEvent, MhwGui};
-use super::weapon::*;
+use super::{armor::*, items::*, weapons::*};
 use crate::mhw::common::GuiDetails;
 use crate::mhw::common::MhwWindowContents;
 use imgui::*;
@@ -11,6 +10,7 @@ pub enum EntryDisplayState {
     None,
     Armor(ArmorInfo),
     Weapon(WeaponInfo),
+    Item(ItemInfo),
 }
 
 impl Default for EntryDisplayState {
@@ -37,6 +37,7 @@ impl MhwGui for EntryDisplayState {
             EntryDisplayState::None => im_str!("<Nothing Selected>"),
             EntryDisplayState::Armor(_) => im_str!("Armor Info"),
             EntryDisplayState::Weapon(_) => im_str!("Weapon Info"),
+            EntryDisplayState::Item(_) => im_str!("Item Info"),
         };
 
         let window = ui
@@ -54,7 +55,10 @@ impl MhwGui for EntryDisplayState {
                 }
                 EntryDisplayState::Weapon(ref mut weapon) => {
                     window.build(|| weapon.build_window(ui, details, event_queue))
-                } // TODO: add more as I build more entry types
+                }
+                EntryDisplayState::Item(ref mut item) => {
+                    window.build(|| item.build_window(ui, details, event_queue))
+                }
             };
         });
     }

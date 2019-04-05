@@ -1,5 +1,5 @@
 use super::entry_display::EntryDisplayState;
-use super::item::*;
+use super::items::*;
 use super::search::SearchState;
 use imgui::*;
 use serde::{Deserialize, Serialize};
@@ -101,7 +101,7 @@ impl Display for Element {
 #[derive(Serialize, Deserialize, Debug)]
 pub struct CraftingCost {
     pub quantity: i32,
-    pub item: Item,
+    pub item: ItemInfo,
 }
 
 #[derive(Serialize, Deserialize, Debug)]

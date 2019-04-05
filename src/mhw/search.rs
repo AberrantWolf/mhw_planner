@@ -1,9 +1,9 @@
 use super::armor::ArmorInfo;
-use super::common::{MhwEvent, MhwGui};
+use super::common::{GuiDetails, MhwEvent, MhwGui};
 use super::entry_display::EntryDisplayState;
+use super::items::ItemInfo;
 use super::query::*;
-use super::weapon::WeaponInfo;
-use crate::mhw::common::GuiDetails;
+use super::weapons::WeaponInfo;
 use num_traits::FromPrimitive;
 
 use imgui::*;
@@ -102,6 +102,22 @@ impl SearchState {
                     }
                 }
             }
+            SearchCategory::Items => {
+                let found: Result<Vec<ItemInfo>, MHWQueryError> = query.execute_mhw_query();
+                match found {
+                    Ok(mut f) => {
+                        if !f.is_empty() {
+                            EntryDisplayState::Item(f.remove(0))
+                        } else {
+                            EntryDisplayState::None
+                        }
+                    }
+                    Err(e) => {
+                        println!("Error retrieving entry: {}", e);
+                        EntryDisplayState::None
+                    }
+                }
+            }
             _ => EntryDisplayState::None,
         }
     }
@@ -137,7 +153,7 @@ impl MhwGui for SearchState {
             if ui.combo(
                 im_str!("##category_combo"),
                 &mut idx,
-                &[im_str!("Armor"), im_str!("Weapon")],
+                &[im_str!("Armor"), im_str!("Weapons"), im_str!("Items")],
                 SearchCategory::MAX as i32,
             ) {}
             if let Some(result) = SearchCategory::from_i32(idx) {

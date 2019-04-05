@@ -13,6 +13,7 @@ use urlencoding;
 pub enum SearchCategory {
     Armor = 0,
     Weapons,
+    Items,
     MAX,
 }
 
@@ -27,6 +28,7 @@ impl fmt::Display for SearchCategory {
         match self {
             SearchCategory::Armor => write!(f, "armor"),
             SearchCategory::Weapons => write!(f, "weapons"),
+            SearchCategory::Items => write!(f, "items"),
             _ => write!(f, "ERROR"),
         }
     }

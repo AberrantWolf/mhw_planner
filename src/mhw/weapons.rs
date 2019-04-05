@@ -634,7 +634,7 @@ impl MhwWindowContents for WeaponInfo {
         //=======================================
         // Name/ID
         ui.with_font(FONT_IDX_HEADER, || {
-            let imstring = ImString::new(self.name.clone());
+            let imstring = ImString::new(self.name.as_str());
             ui.text_colored(rarity_color(self.rarity), &imstring);
         });
         ui.with_font(FONT_IDX_MINI, || {
