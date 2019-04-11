@@ -1,38 +1,10 @@
 use itertools::Itertools;
-use num_derive::{FromPrimitive, ToPrimitive};
 use reqwest;
 use reqwest::Url;
 use serde::de::DeserializeOwned;
 use std::fmt;
 use urlencoding;
-
-//
-// Search Category
-//
-#[derive(Debug, Clone, Copy, FromPrimitive, ToPrimitive)]
-pub enum SearchCategory {
-    Armor = 0,
-    Weapons,
-    Items,
-    MAX,
-}
-
-impl Default for SearchCategory {
-    fn default() -> Self {
-        SearchCategory::Armor
-    }
-}
-
-impl fmt::Display for SearchCategory {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match self {
-            SearchCategory::Armor => write!(f, "armor"),
-            SearchCategory::Weapons => write!(f, "weapons"),
-            SearchCategory::Items => write!(f, "items"),
-            _ => write!(f, "ERROR"),
-        }
-    }
-}
+use super::search::SearchCategory;
 
 //
 // Query Filter Type

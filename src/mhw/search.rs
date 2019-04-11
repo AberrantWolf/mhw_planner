@@ -4,15 +4,43 @@ use super::entry_display::EntryDisplayState;
 use super::items::ItemInfo;
 use super::query::*;
 use super::weapons::WeaponInfo;
+use num_derive::{FromPrimitive, ToPrimitive};
 use num_traits::FromPrimitive;
+use std::fmt;
 
 use imgui::*;
 use serde::{Deserialize, Serialize};
 use std::collections::VecDeque;
 
-// TODO: once this is refactored here, probably won't need pub fields
-
 const SEARCH_WINDOW_WIDTH: f32 = 240f32;
+
+//
+// Search Category
+//
+#[derive(Debug, Clone, Copy, FromPrimitive, ToPrimitive)]
+pub enum SearchCategory {
+    Armor = 0,
+    Weapons,
+    Items,
+    MAX,
+}
+
+impl Default for SearchCategory {
+    fn default() -> Self {
+        SearchCategory::Armor
+    }
+}
+
+impl fmt::Display for SearchCategory {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            SearchCategory::Armor => write!(f, "armor"),
+            SearchCategory::Weapons => write!(f, "weapons"),
+            SearchCategory::Items => write!(f, "items"),
+            _ => write!(f, "ERROR"),
+        }
+    }
+}
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct SearchResults {
