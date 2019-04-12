@@ -1,10 +1,10 @@
+use super::search::SearchCategory;
 use itertools::Itertools;
 use reqwest;
 use reqwest::Url;
 use serde::de::DeserializeOwned;
 use std::fmt;
 use urlencoding;
-use super::search::SearchCategory;
 
 //
 // Query Filter Type
@@ -109,11 +109,25 @@ pub struct QueryInfo {
 
 impl QueryInfo {
     pub fn find_ids(text: &str, category: SearchCategory) -> Self {
+        let mut search_string = text.to_owned();
+
+        // Start with % character for wildcard
+        if !search_string.starts_with('%') {
+            search_string = format!("%{}", search_string);
+        }
+
+        // End all with % character for wildcard
+        if !search_string.ends_with('%') {
+            search_string = format!("{}%", search_string);
+        }
+
+        search_string = search_string.replace("*", "%");
+
         Self {
             category,
             filter: Some(QueryFilter {
                 field_name: "name".to_owned(),
-                filter: QueryFilterType::Like(text.to_owned()),
+                filter: QueryFilterType::Like(search_string),
             }),
             projection: Some(QueryProjection {
                 meta: QueryProjectionMeta::Inclusive,
