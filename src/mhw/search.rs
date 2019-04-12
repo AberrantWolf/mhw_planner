@@ -151,6 +151,31 @@ impl SearchState {
     }
 }
 
+impl SearchState {
+    pub fn layout_filter_window<'a>(
+        &mut self,
+        ui: &Ui<'a>,
+        details: &mut GuiDetails,
+        _event_queue: &mut VecDeque<MhwEvent>,
+    ) {
+        let logical_size = ui.frame_size().logical_size;
+        let draw_cursor_pos = details.next_start_pos;
+        let window_size = (
+            (logical_size.0 / 2f64) as f32,
+            (logical_size.1 / 2f64) as f32,
+        );
+        let window = ui
+            .window(im_str!("Filter"))
+            .position(draw_cursor_pos, ImGuiCond::Always)
+            .size(
+                (SEARCH_WINDOW_WIDTH, window_size.1 - draw_cursor_pos.1),
+                ImGuiCond::Always,
+            )
+            .flags(ImGuiWindowFlags::NoDecoration);
+        window.build(|| {});
+    }
+}
+
 impl MhwGui for SearchState {
     fn layout<'a>(
         &mut self,
@@ -173,7 +198,7 @@ impl MhwGui for SearchState {
                 (SEARCH_WINDOW_WIDTH, window_size.1 - draw_cursor_pos.1),
                 ImGuiCond::Always,
             )
-            .flags(ImGuiWindowFlags::NoDecoration);;
+            .flags(ImGuiWindowFlags::NoDecoration);
 
         let mut build_func = || {
             // select category
@@ -184,6 +209,12 @@ impl MhwGui for SearchState {
                 &[im_str!("Armor"), im_str!("Weapons"), im_str!("Items")],
                 SearchCategory::MAX as i32,
             ) {}
+            ui.same_line(0.0);
+            ui.with_item_width(-1.0, || {
+                if ui.button(im_str!("Filter..."), (-1.0, 0.0)) {
+                    details.draw_filter_window = !details.draw_filter_window;
+                }
+            });
             if let Some(result) = SearchCategory::from_i32(idx) {
                 self.search_type = result;
             }
@@ -191,14 +222,16 @@ impl MhwGui for SearchState {
             // type name filter string
             ui.text(im_str!("Name: "));
             ui.same_line(0.0);
-            if ui
-                .input_text(im_str!(""), &mut self.text)
-                .enter_returns_true(true)
-                .build()
-            {
-                ui.set_keyboard_focus_here(-1);
-                self.query_api();
-            }
+            ui.with_item_width(-1.0, || {
+                if ui
+                    .input_text(im_str!("###search_input"), &mut self.text)
+                    .enter_returns_true(true)
+                    .build()
+                {
+                    ui.set_keyboard_focus_here(-1);
+                    self.query_api();
+                }
+            });
             ui.separator();
             let results_list = &self.results;
             let names_list_imstring = results_list
@@ -213,7 +246,7 @@ impl MhwGui for SearchState {
             let available_space = ui.get_content_region_avail();
             ui.with_item_width(-1.0, || {
                 let did_change = ui.list_box(
-                    im_str!("search_results"),
+                    im_str!("###search_results"),
                     &mut self.selected_item,
                     ref_names.as_slice(),
                     ((available_space.1 - ui.imgui().style().frame_padding.y * 2.0)

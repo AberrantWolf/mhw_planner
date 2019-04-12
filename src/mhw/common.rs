@@ -58,6 +58,7 @@ use fonts::*;
 #[derive(Debug)]
 pub struct GuiDetails {
     pub next_start_pos: (f32, f32),
+    pub draw_filter_window: bool,
 }
 
 pub trait MhwGui {
@@ -152,6 +153,7 @@ pub struct AppState {
     search_state: SearchState,
     entry_display_state: EntryDisplayState,
     event_list: VecDeque<MhwEvent>,
+    gui_details: GuiDetails,
 }
 
 impl AppState {
@@ -171,13 +173,11 @@ impl AppState {
     }
 
     pub fn layout<'a>(&mut self, ui: &Ui<'a>) {
-        let mut gui_details = GuiDetails {
-            next_start_pos: (0f32, 0f32),
-        };
+        self.gui_details.next_start_pos = (0.0, 0.0);
 
         ui.with_font(FONT_IDX_MENU, || {
             ui.main_menu_bar(|| {
-                gui_details.next_start_pos.1 = ui.get_window_size().1;
+                self.gui_details.next_start_pos.1 = ui.get_window_size().1;
                 ui.menu(im_str!("File")).build(|| {
                     ui.with_font(1, || {
                         if ui.menu_item(im_str!("Quit")).build() {
@@ -190,9 +190,16 @@ impl AppState {
 
         ui.with_font(FONT_IDX_NORMAL, || {
             self.search_state
-                .layout(&ui, &mut gui_details, &mut self.event_list);
+                .layout(&ui, &mut self.gui_details, &mut self.event_list);
             self.entry_display_state
-                .layout(&ui, &mut gui_details, &mut self.event_list);
+                .layout(&ui, &mut self.gui_details, &mut self.event_list);
+            if self.gui_details.draw_filter_window {
+                self.search_state.layout_filter_window(
+                    &ui,
+                    &mut self.gui_details,
+                    &mut self.event_list,
+                );
+            }
         });
     }
 }
@@ -204,6 +211,10 @@ impl Default for AppState {
             search_state: Default::default(),
             entry_display_state: Default::default(),
             event_list: Default::default(),
+            gui_details: GuiDetails {
+                next_start_pos: (0.0, 0.0),
+                draw_filter_window: false,
+            },
         }
     }
 }
