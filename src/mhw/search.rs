@@ -3,6 +3,7 @@ use super::common::{GuiDetails, MhwEvent, MhwGui};
 use super::entry_display::EntryDisplayState;
 use super::items::ItemInfo;
 use super::query::*;
+use super::query_filters;
 use super::weapons::WeaponInfo;
 use num_derive::{FromPrimitive, ToPrimitive};
 use num_traits::FromPrimitive;
@@ -56,6 +57,7 @@ pub struct SearchState {
     pub should_draw: bool,
     pub results: Vec<SearchResults>,
     // TODO: add filters
+    filters: Vec<QueryFilter>,
 }
 
 impl Default for SearchState {
@@ -66,6 +68,7 @@ impl Default for SearchState {
             selected_item: -1,
             should_draw: true,
             results: vec![],
+            filters: vec![],
         }
     }
 }
@@ -161,18 +164,31 @@ impl SearchState {
         let logical_size = ui.frame_size().logical_size;
         let draw_cursor_pos = details.next_start_pos;
         let window_size = (
-            (logical_size.0 / 2f64) as f32,
-            (logical_size.1 / 2f64) as f32,
+            ((logical_size.0 as f32 - draw_cursor_pos.0) * 0.67),
+            ((logical_size.1 as f32 - draw_cursor_pos.1) * 0.5),
         );
         let window = ui
             .window(im_str!("Filter"))
             .position(draw_cursor_pos, ImGuiCond::Always)
-            .size(
-                (SEARCH_WINDOW_WIDTH, window_size.1 - draw_cursor_pos.1),
-                ImGuiCond::Always,
-            )
+            .size(window_size, ImGuiCond::Always)
             .flags(ImGuiWindowFlags::NoDecoration);
-        window.build(|| {});
+        window.build(|| {
+            let categories = query_filters::get_filter_categories(&self.search_type);
+            let ref_names = categories
+                .iter()
+                .map(std::convert::AsRef::as_ref)
+                .collect::<Vec<_>>();
+            //for mut filter in &self.filters {
+            // draw the stuff
+            let mut idx = 0;
+            if ui.combo(
+                im_str!("##filter_combo"),
+                &mut idx,
+                ref_names.as_slice(),
+                SearchCategory::MAX as i32,
+            ) {}
+            //}
+        });
     }
 }
 
@@ -240,7 +256,7 @@ impl MhwGui for SearchState {
                 .collect::<Vec<_>>();
             let ref_names = names_list_imstring
                 .iter()
-                .map(|name| name.as_ref())
+                .map(std::convert::AsRef::as_ref)
                 .collect::<Vec<_>>();
 
             let available_space = ui.get_content_region_avail();

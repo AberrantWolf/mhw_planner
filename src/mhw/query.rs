@@ -166,7 +166,7 @@ impl QueryInfo {
 
         let mut prefix = "?"; // in case there's no query, prefix should use '?'
         if let Some(filter) = &self.filter {
-            let filter_string = format!("?q={}", filter);
+            let filter_string = format!("?q={{\"$and\": [{}] }}", filter);
             url_string.push_str(filter_string.as_str());
             prefix = "&";
         }
